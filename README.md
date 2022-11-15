@@ -10,6 +10,8 @@ In this repository, one will find my graduation work which is based on the (incr
 
 Therefore, the goal of this project is to first **reproduce the result** and then **explore further** different configurations of convolutional neural networks.
 
+
+Image credit : *NASA: From "Pursuit of Light" - Perpetual Ocean*
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
 <a style="text-decoration:none" href="https://github.com/m2lines/pyqg_parameterization_benchmarks">Introduction</a>
