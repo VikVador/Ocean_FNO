@@ -6,7 +6,8 @@
 </p>
 <hr>
 
-In this repository, one will find my graduation work which is based on the (incredible) work made from _Benchmarking of machine learning ocean parameterizations in an idealized model_ (Submitted to JAMES, https://www.essoar.org/doi/10.1002/essoar.10511742.1).
+In this repository, one will find my graduation work which is based on the (incredible) work made from <a style="text-decoration:none" href="https://www.essoar.org/doi/10.1002/essoar.10511742.1">_Benchmarking of machine learning ocean parameterizations in an idealized model_</a>
+(Submitted to JAMES)
 
 Therefore, the goal of this project is to first **reproduce the result** and then **explore further** different configurations of convolutional neural networks.
 
