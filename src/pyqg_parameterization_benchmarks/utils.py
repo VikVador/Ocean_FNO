@@ -1,26 +1,57 @@
+#------------------------------------------------------------------------------
+#
+#           Ocean subgrid parameterization using machine learning
+#
+#                             Graduation work
+#
+#------------------------------------------------------------------------------
+# @ Victor Mangeleer
+#
+# -------
+# Credits
+# -------
+# For the source code, all the credit goes to:
+#
+#       A. Ross, Z. Li, P. Perezhogin, C. Fernandez-Granda & L. Zanna
+#
+# with the code originally coming from their paper:
+#
+#       https://www.essoar.org/pdfjs/10.1002/essoar.10511742.1
+#
+#  ----
+#  Note
+#  ----
+#  - For the method def nx(self), one could generalize it !
+#
+
 import re
 import pyqg
 import operator
 import numpy as np
 import xarray as xr
 
+#----------------------------------------------------------------------------------------
+#                 PYQG Parameterization - Handler extension
+#----------------------------------------------------------------------------------------
 class Parameterization(pyqg.Parameterization):
-    """Helper class for defining parameterizations. This extends the normal
-    pyqg parameterization framework to handle prediction of either subgrid
-    forcings or fluxes, as well as to apply to either pyqg.Models or
-    xarray.Datasets."""
-    
+    """
+    Helper class for defining parameterizations. This extends the normal pyqg parameterization
+    framework to handle prediction of either subgrid forcings or fluxes, as well as to apply
+    to either pyqg.Models or xarray.Datasets.
+    """
+
     @property
     def targets(self):
         raise NotImplementedError
 
     def predict(self):
         raise NotImplementedError
-        
+
     @property
     def nx(self):
         return 64 # Future work should generalize this.
 
+    # Used to determine what type of parameterization one is working with
     @property
     def parameterization_type(self):
         if any(q in self.targets[0] for q in ['q_forcing', 'q_subgrid']):
@@ -29,12 +60,15 @@ class Parameterization(pyqg.Parameterization):
             return 'uv_parameterization'
 
     def __call__(self, m):
+
+        # Used to convert data to xarray type
         def arr(x):
             if isinstance(x, xr.DataArray): x = x.data
             return x.astype(m.q.dtype)
 
+        # ------ DON'T WORRY ------
         preds = self.predict(m)
-        keys = list(sorted(preds.keys()))
+        keys  = list(sorted(preds.keys()))
         assert keys == self.targets
         if len(keys) == 1:
             return arr(preds[keys[0]])
@@ -47,10 +81,16 @@ class Parameterization(pyqg.Parameterization):
                     arr(ex.ddx(preds['uv_subgrid_flux']) + ex.ddy(preds['vv_subgrid_flux'])))
         else:
             return tuple(arr(preds[k]) for k in keys)
+        # ------ DON'T WORRY ------
 
+    #----------------------------------------------------------------------------------------
+    #                      PYQG Parameterization - Running online
+    #----------------------------------------------------------------------------------------
     def run_online(self, sampling_freq=1000, **kw):
-        """Run a parameterized pyqg.QGModel, saving snapshots every 1000h."""
-        
+        """
+        Run a parameterized pyqg.QGModel, saving snapshots every 1000h.
+        """
+
         # Initialize a pyqg model with this parameterization
         params = dict(kw)
         params[self.parameterization_type] = self
@@ -65,7 +105,7 @@ class Parameterization(pyqg.Parameterization):
             m._step_forward()
 
         ds = xr.concat(snapshots, dim='time')
-        
+
         # Diagnostics get dropped by this procedure since they're only present for
         # part of the timeseries; resolve this by saving the most recent
         # diagnostics (they're already time-averaged so this is ok)
@@ -79,12 +119,15 @@ class Parameterization(pyqg.Parameterization):
 
         return ds
 
+    #----------------------------------------------------------------------------------------
+    #                      PYQG Parameterization - Test offline
+    #----------------------------------------------------------------------------------------
     def test_offline(self, dataset):
         """Evaluate the parameterization on an offline dataset,
         computing a variety of metrics."""
-        
+
         test = dataset[self.targets]
-        
+
         for key, val in self.predict(dataset).items():
             truth = test[key]
             test[f"{key}_predictions"] = truth*0 + val
@@ -99,7 +142,7 @@ class Parameterization(pyqg.Parameterization):
 
             def dims_except(*dims):
                 return [d for d in test[key].dims if d not in dims]
-            
+
             time = dims_except('x','y','lev')
             space = dims_except('time','lev')
             both = dims_except('lev')
@@ -126,7 +169,7 @@ class Parameterization(pyqg.Parameterization):
 class FeatureExtractor:
     """Helper class for taking spatial derivatives and translating string
     expressions into data. Works with either pyqg.Model or xarray.Dataset."""
-    
+
     def __call__(self, feature_or_features, flat=False):
         arr = lambda x: x.data if isinstance(x, xr.DataArray) else x
         if isinstance(feature_or_features, str):
@@ -141,7 +184,7 @@ class FeatureExtractor:
     def __init__(self, model_or_dataset):
         self.m = model_or_dataset
         self.cache = {}
-        
+
         if hasattr(self.m, '_ik'):
             self.ik, self.il = np.meshgrid(self.m._ik, self.m._il)
         elif hasattr(self.m, 'fft'):
@@ -170,16 +213,16 @@ class FeatureExtractor:
             return self.m.ifft(x)
         except:
             return self['q']*0 + np.fft.irfftn(x, axes=(-2,-1))
-    
+
     def is_real(self, arr):
         return len(set(arr.shape[-2:])) == 1
-    
+
     def real(self, arr):
         arr = self[arr]
         if isinstance(arr, float): return arr
         if self.is_real(arr): return arr
         return self.ifft(arr)
-    
+
     def compl(self, arr):
         arr = self[arr]
         if isinstance(arr, float): return arr
@@ -207,7 +250,7 @@ class FeatureExtractor:
     # Main function: interpreting a string as a feature
     def extract_feature(self, feature):
         """Evaluate a string feature, e.g. laplacian(advected(curl(u,v)))."""
-        
+
         # Helper to recurse on each side of an arity-2 expression
         def extract_pair(s):
             depth = 0
@@ -221,7 +264,7 @@ class FeatureExtractor:
             raise ValueError(f"string {s} is not a comma-separated pair")
 
         real_or_spectral = lambda arr: arr + [a+'h' for a in arr]
-            
+
         if not self.extracted(feature):
             # Check if the feature looks like "function(expr1, expr2)"
             # (better would be to write a grammar + use a parser,
@@ -280,7 +323,7 @@ def energy_budget_figure(models, skip=0):
     for i,term in enumerate(['KEflux','APEflux','APEgenspec','KEfrictionspec']):
         plt.subplot(1,4,i+1,title=term)
         plt.axhline(0,color='gray', ls='--')
-        
+
         for model, label in models:
             spec = energy_budget_term(model, term)
             plt.semilogx(model.k[skip:], spec[skip:],

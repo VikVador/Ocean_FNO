@@ -1,4 +1,4 @@
-<img src="assets/header.jpg" />
+<img src="assets/header_git.gif" />
 
 <hr>
 <p align="center">

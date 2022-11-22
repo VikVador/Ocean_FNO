@@ -1,3 +1,24 @@
+#------------------------------------------------------------------------------
+#
+#           Ocean subgrid parameterization using machine learning
+#
+#                             Graduation work
+#
+#------------------------------------------------------------------------------
+# @ Victor Mangeleer
+#
+# -------
+# Credits
+# -------
+# For the source code, all the credit goes to:
+#
+#       A. Ross, Z. Li, P. Perezhogin, C. Fernandez-Granda & L. Zanna
+#
+# with the code originally coming from their paper:
+#
+#       https://www.essoar.org/pdfjs/10.1002/essoar.10511742.1
+#
+
 import os
 import glob
 import pyqg
@@ -7,14 +28,22 @@ import torch.nn as nn
 import torch.optim as optim
 import numpy as np
 import xarray as xr
-from collections import OrderedDict
-from torch.autograd import grad, Variable
+
+from collections                            import OrderedDict
+from torch.autograd                         import grad, Variable
 from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
 
+#----------------------------------------------------------------------------------------
+#                 Convolutional neural network - Architecture definition
+#----------------------------------------------------------------------------------------
+# If you want to modify the core of the FCNN, i.e. it's structure, then it's here !
 class FullyCNN(nn.Sequential):
-    """Pytorch class defining our CNN architecture, plus some helpers for
-    dealing with constraints and scaling."""
-    def __init__(self, inputs, targets, padding='circular', zero_mean=True):
+    """
+    Pytorch class defining our CNN architecture, plus some helpers for  dealing with constraints and scaling.
+    """
+    def __init__(self, inputs, targets, padding = 'circular', zero_mean = True):
+
+        # Defining the padding type
         if padding is None:
             padding_5 = 0
             padding_3 = 0
@@ -23,54 +52,67 @@ class FullyCNN(nn.Sequential):
             padding_3 = 1
         else:
             raise ValueError('Unknow value for padding parameter.')
-        self.padding = padding
-        self.inputs = inputs
-        self.targets = targets
+
+        # Dimension of input and output data
         n_in = len(inputs)
         n_out = len(targets)
-        self.n_in = n_in
+
+        # Storing more information about the data and parameters
+        self.padding      = padding
+        self.inputs       = inputs
+        self.targets      = targets
+        self.is_zero_mean = zero_mean
+        self.n_in         = n_in
         kw = {}
         if padding == 'circular':
             kw['padding_mode'] = 'circular'
-        block1 = self._make_subblock(nn.Conv2d(n_in, 128, 5, padding=padding_5, **kw))
-        block2 = self._make_subblock(nn.Conv2d(128, 64, 5, padding=padding_5, **kw))
-        block3 = self._make_subblock(nn.Conv2d(64, 32, 3, padding=padding_3, **kw))
-        block4 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block5 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block6 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        block7 = self._make_subblock(nn.Conv2d(32, 32, 3, padding=padding_3, **kw))
-        conv8 = nn.Conv2d(32, n_out, 3, padding=padding_3)
-        super().__init__(*block1, *block2, *block3, *block4, *block5,
-                            *block6, *block7, conv8)
-        self.is_zero_mean = zero_mean
 
-    def forward(self, x):
-        r = super().forward(x)
-        if self.is_zero_mean:
-            return r - r.mean(dim=(1,2,3), keepdim=True)
-        else:
-            return r
-        
+    #-----------------------------------------------------------------------------------
+    #                    MODIFY - FULLY CONVOLUTIONAL NEURAL NETWORK
+    #-----------------------------------------------------------------------------------
+        block1 = self._make_subblock(nn.Conv2d(n_in, 128, 5, padding = padding_5, **kw))
+        block2 = self._make_subblock(nn.Conv2d(128,   64, 5, padding = padding_5, **kw))
+        block3 = self._make_subblock(nn.Conv2d(64,    32, 3, padding = padding_3, **kw))
+        block4 = self._make_subblock(nn.Conv2d(32,    32, 3, padding = padding_3, **kw))
+        block5 = self._make_subblock(nn.Conv2d(32,    32, 3, padding = padding_3, **kw))
+        block6 = self._make_subblock(nn.Conv2d(32,    32, 3, padding = padding_3, **kw))
+        block7 = self._make_subblock(nn.Conv2d(32,    32, 3, padding = padding_3, **kw))
+        conv8  =                     nn.Conv2d(32, n_out, 3, padding = padding_3)
+
+        # Combining everything together
+        super().__init__(*block1, *block2, *block3, *block4, *block5, *block6, *block7, conv8)
+
     def _make_subblock(self, conv):
         return [conv, nn.ReLU(), nn.BatchNorm2d(conv.out_channels)]
 
+    #-----------------------------------------------------------------------------------
+    #                    MODIFY - FULLY CONVOLUTIONAL NEURAL NETWORK
+    #-----------------------------------------------------------------------------------
+    # Compute a forward pass of the FCNN using the input X
+    def forward(self, x):
+        r = super().forward(x)
+        if self.is_zero_mean:
+            return r - r.mean(dim = (1,2,3), keepdim = True)
+        else:
+            return r
+
+    # Used to extract and write (human-readable) the features (I think)
     def extract_vars(self, m, features, dtype=np.float32):
-        ex = FeatureExtractor(m)
-
-        arr = np.stack([
-            np.take(ex(feat), z, axis=-3) for feat, z in features
-        ], axis=-3)
-
+        ex  = FeatureExtractor(m)
+        arr = np.stack([np.take(ex(feat), z, axis=-3) for feat, z in features], axis=-3)
         arr = arr.reshape((-1, len(features), ex.nx, ex.nx))
         arr = arr.astype(dtype)
         return arr
 
+    # From dataset m, the variables in inputs are extracted (ex: inputs = ['q', 'u'])
     def extract_inputs(self, m):
         return self.extract_vars(m, self.inputs)
 
+    # From dataset m, the variables in targets are extracted (ex: inputs = ['q_subgrid_forcing'])
     def extract_targets(self, m):
         return self.extract_vars(m, self.targets)
 
+    # As weird as it sounds, it computes and stores all the gradients associated to each minibatch
     def input_gradients(self, inputs, output_channel, j, i, device=None):
         if device is None:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -97,82 +139,121 @@ class FullyCNN(nn.Sequential):
         else:
             return grads
 
-    def predict(self, inputs, device=None):
+    # Used to compute a prediction (for testing not training since grad not saved)
+    def predict(self, inputs, device = None):
+
+        # Checking for a GPU !
         if device is None:
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             self.to(device)
-        
+
+        # Loading the input and normalizing them !
         X = self.input_scale.transform(self.extract_inputs(inputs))
 
+        # Compute predictions
         preds = []
-        for x, in minibatch(X, shuffle=False):
+        for x, in minibatch(X, shuffle = False):
             x = x.to(device)
             with torch.no_grad():
                 preds.append(self.forward(x).cpu().numpy())
 
+        # Loading the outputs and normalizing them !
         preds = self.output_scale.inverse_transform(np.vstack(preds))
 
-        s = list(inputs.q.shape)
-        preds = np.stack([
-            preds[:,i].reshape(s[:-3] + s[-2:])
-            for i in range(len(self.targets))
-        ], axis=-3)
+        s     = list(inputs.q.shape)
+        preds = np.stack([preds[:,i].reshape(s[:-3] + s[-2:]) for i in range(len(self.targets))], axis = -3)
 
         try:
             return preds.astype(inputs.q.dtype)
         except:
             return preds
 
+    # Defining own version of the mean squarred error
     def mse(self, inputs, targets, **kw):
         y_true = targets.reshape(-1, np.prod(targets.shape[1:]))
         y_pred = self.predict(inputs).reshape(-1, np.prod(targets.shape[1:]))
         return np.mean(np.sum((y_pred - y_true)**2, axis=1))
 
-    def fit(self, inputs, targets, rescale=False, **kw):
+    # Used to start training a model
+    def fit(self, inputs, targets, rescale = False, **kw):
+
+        # Creation of a scaler for the input (mu = 0 and std = 1) if:
+        # - Rescale = true
+        # - The self variable 'input_scale' is not found
+        # - The self variable 'input_scale' is found BUT equal to NONE
         if rescale or not hasattr(self, 'input_scale') or self.input_scale is None:
             self.input_scale = ChannelwiseScaler(inputs)
+
+        # Creation of a scaler for the output (mu = 0 and std = 1) if:
+        # - Rescale = true
+        # - The self variable 'input_scale' is not found
+        # - The self variable 'input_scale' is found BUT equal to NONE
         if rescale or not hasattr(self, 'output_scale') or self.output_scale is None:
             self.output_scale = ChannelwiseScaler(targets, zero_mean=self.is_zero_mean)
-        train(self,
-              self.input_scale.transform(inputs),
-              self.output_scale.transform(targets),
-              **kw)
 
+        # Going further into the training
+        train(self, self.input_scale.transform(inputs), self.output_scale.transform(targets), **kw)
+
+    # Save the model !
     def save(self, path):
+
+        # Creation of a new directory using terminal command
         os.system(f"mkdir -p {path}")
+
+        # Defining device to use (GPU or CPU)
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        # Saving the models' weights
         self.cpu()
         torch.save(self.state_dict(), f"{path}/weights.pt")
+
+        # Saving data and other parameters
         self.to(device)
         if hasattr(self, 'input_scale') and self.input_scale is not None:
             with open(f"{path}/input_scale.pkl", 'wb') as f:
                 pickle.dump(self.input_scale, f)
+
         if hasattr(self, 'output_scale')  and self.output_scale is not None:
             with open(f"{path}/output_scale.pkl", 'wb') as f:
                 pickle.dump(self.output_scale, f)
+
         with open(f"{path}/inputs.pkl", 'wb') as f:
             pickle.dump(self.inputs, f)
+
         with open(f"{path}/targets.pkl", 'wb') as f:
             pickle.dump(self.targets, f)
+
         if self.is_zero_mean:
             open(f"{path}/zero_mean", 'a').close()
+
         if hasattr(self, 'padding'):
             with open(f"{path}/padding", 'w') as f:
                 f.write(self.padding)
 
+    # Used to load a FCNN that has been saved
     @classmethod
-    def load(cls, path, set_eval=True, **kwargs):
+    def load(cls, path, set_eval = True, **kwargs):
+
+        # Loading the associated inputs and targets used for training
         with open(f"{path}/inputs.pkl", 'rb') as f:
             inputs = pickle.load(f)
         with open(f"{path}/targets.pkl", 'rb') as f:
             targets = pickle.load(f)
+
+        # Loading the padding value
         kw = {}
         kw.update(**kwargs)
         if os.path.exists(f"{path}/padding"):
             with open(f"{path}/padding", 'r') as f:
                 kw['padding'] = f.read().strip()
+
+        # Initialization of the model
         model = cls(inputs, targets, **kw)
+
+        # Inserting former parameters
         model.load_state_dict(torch.load(f"{path}/weights.pt"))
+
+        # Loading other parameters
         if os.path.exists(f"{path}/input_scale.pkl"):
             with open(f"{path}/input_scale.pkl", 'rb') as f:
                 model.input_scale = pickle.load(f)
@@ -181,74 +262,139 @@ class FullyCNN(nn.Sequential):
                 model.output_scale = pickle.load(f)
         if os.path.exists(f"{path}/zero_mean"):
             model.is_zero_mean = True
+
+        # By default, model in evalutation model (important if dropout or other stuff)
         if set_eval:
             model.eval()
+
         return model
 
+#----------------------------------------------------------------------------------------
+#                                 Statistics functions
+#----------------------------------------------------------------------------------------
 class BasicScaler(object):
-    def __init__(self, mu=0, sd=1):
+    """
+    Simple class to perform normalization and denormalization
+    """
+    def __init__(self, mu = 0, sd = 1):
         self.mu = mu
         self.sd = sd
-        
+
     def transform(self, x):
         return (x - self.mu) / self.sd
-    
+
     def inverse_transform(self, z):
+        # One needs to compute first mu and sd -> ChannelwiseScaler
         return z * self.sd + self.mu
 
 class ChannelwiseScaler(BasicScaler):
-    def __init__(self, x, zero_mean=False):
+    """
+    Simple class to compute mean and standard deviation of each channel
+    """
+    def __init__(self, x, zero_mean = False):
         assert len(x.shape) == 4
+
+        # Computation of the mean
         if zero_mean:
             mu = 0
         else:
-            mu = np.array([x[:,i].mean()
-                for i in range(x.shape[1])])[np.newaxis,:,np.newaxis,np.newaxis]
-        sd = np.array([x[:,i].std()
-            for i in range(x.shape[1])])[np.newaxis,:,np.newaxis,np.newaxis]
+            mu = np.array([x[:,i].mean() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
+
+        # Computation of the standard deviation
+        sd = np.array([x[:,i].std() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
+
+        # Initialization of a scaler with correct mean and standard deviation
         super().__init__(mu, sd)
 
-def minibatch(*arrays, batch_size=64, as_tensor=True, shuffle=True):
+#----------------------------------------------------------------------------------------
+#             MODIFY - Convolutional neural network - Training functions
+#----------------------------------------------------------------------------------------
+def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
+
+    # Since set removes duplicate, this assert make sure that inputs and outputs have same dimensions !
     assert len(set([len(a) for a in arrays])) == 1
+
+    # Index vector
     order = np.arange(len(arrays[0]))
     if shuffle:
         np.random.shuffle(order)
+
+    # Step size (arrondis vers le bas)
     steps = int(np.ceil(len(arrays[0]) / batch_size))
+
+    # Choose data type to store the batch
     xform = torch.as_tensor if as_tensor else lambda x: x
+
+    # Creation of all the mini batches !
     for step in range(steps):
-        idx = order[step*batch_size:(step+1)*batch_size]
+        idx = order[step * batch_size : (step + 1) * batch_size]
+
+        # Yield is the same as return except that it return a generator ! In other words,
+        # it is an iterator that you can only go through once since values are discarded !
+        # This really really really smart !
         yield tuple(xform(array[idx]) for array in arrays)
 
-def train(net, inputs, targets, num_epochs=50, batch_size=64, learning_rate=0.001, device=None):
+# Used to make the training a model, it could be nice to upgrade it !
+def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate = 0.001, device = None):
+
+    # Looking for a GPU !
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
         net.to(device)
-    optimizer = optim.Adam(net.parameters(), lr=learning_rate)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(num_epochs/2), int(num_epochs*3/4), int(num_epochs*7/8)], gamma=0.1)
+
+    # Training parameters
+    optimizer = optim.Adam(net.parameters(), lr = learning_rate)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(num_epochs/2), int(num_epochs * 3/4), int(num_epochs * 7/8)], gamma=0.1)
     criterion = nn.MSELoss()
+
+    # Displaying information over terminal
+    # Start training
     for epoch in range(num_epochs):
-        epoch_loss = 0.0
+        epoch_loss  = 0.0
         epoch_steps = 0
-        for x, y in minibatch(inputs, targets, batch_size=batch_size):
+
+        # Retreiving a batch of data
+        for x, y in minibatch(inputs, targets, batch_size = batch_size):
+
+            # Reseting gradients
             optimizer.zero_grad()
-            yhat = net.forward(x.to(device))
+
+            # Computing prediction and storing target
+            yhat  = net.forward(x.to(device))
             ytrue = y.to(device)
+
+            # Computing loss
             loss = criterion(yhat, ytrue)
             loss.backward()
+
+            # Optimization
             optimizer.step()
+
+            # Updating epoch info ! Would be nice to upgrade it !
             epoch_loss += loss.item()
             epoch_steps += 1
+
+        # Displaying information over terminal
         print(f"Loss after Epoch {epoch+1}: {epoch_loss/epoch_steps}")
+
+        # Updating the scheduler to update learning rate !
         scheduler.step()
 
+#----------------------------------------------------------------------------------------
+#                      Convolutional neural network - Handler
+#----------------------------------------------------------------------------------------
+# Contains all the functions one needs to train the NN !
 class FCNNParameterization(Parameterization):
-    def __init__(self, directory, models=None, **kw):
+
+    # Associates a/some model/s to the handler, ATTENTION model should be an instance of FullyCNN
+    def __init__(self, directory, models = None, **kw):
         self.directory = directory
         self.models = models if models is not None else [
             FullyCNN.load(f, **kw)
             for f in sorted(glob.glob(os.path.join(directory, "models/*")))
         ]
 
+    # Retreives all the targets associated to each model
     @property
     def targets(self):
         targets = set()
@@ -257,59 +403,88 @@ class FCNNParameterization(Parameterization):
                 targets.add(target)
         return list(sorted(list(targets)))
 
+    # Compute prediction for all models
     def predict(self, m):
         preds = {}
 
         for model in self.models:
             pred = model.predict(m)
             assert len(pred.shape) == len(m.q.shape)
-            # Handle the arduous task of getting the indices right for many
-            # possible input shapes (e.g. pyqg.Model or xr.Dataset snapshot
-            # stack)
+
+            # ------ DON'T WORRY ------
+            # Handle the arduous task of getting the indices right for many possible input shapes
+            # (e.g. pyqg.Model or xr.Dataset snapshot stack)
             for channel in range(pred.shape[-3]):
                 target, z = model.targets[channel]
                 if target not in preds:
                     preds[target] = np.zeros_like(m.q)
-                out_indices = [slice(None) for _ in m.q.shape]
+                out_indices     = [slice(None) for _ in m.q.shape]
                 out_indices[-3] = slice(z,z+1)
-                in_indices = [slice(None) for _ in m.q.shape]
-                in_indices[-3] = slice(channel,channel+1)
+                in_indices      = [slice(None) for _ in m.q.shape]
+                in_indices[-3]  = slice(channel,channel+1)
                 preds[target][tuple(out_indices)] = pred[tuple(in_indices)]
+            # ------ DON'T WORRY ------
 
         return preds
 
     @classmethod
-    def train_on(cls, dataset, directory,
-            inputs=['q','u','v'],
-            targets=['q_subgrid_forcing'],
-            num_epochs=50,
-            zero_mean=True,
-            padding='circular', **kw):
+    def test(cls):
+        print("yes")
 
+    @classmethod
+    def train_on(cls, dataset, directory, inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'],
+                      num_epochs = 50, zero_mean = True, padding = 'circular', **kw):
+
+        # Retreives the number of layers of the simulation
         layers = range(len(dataset.lev))
 
+        # For each layer, one creates a FCNN which has:
+        # - Inputs    : 'q', 'u', 'v' of each layer
+        # - Outputs   : 'q_subgrid_forcing' of the current layer
+        # - Zero mean : true
+        # - Padding   : 'circular'
         models = [
             FullyCNN(
-                [(feat, zi) for feat in inputs for zi in layers],
-                [(feat, z) for feat in targets],
-                zero_mean=zero_mean,
-                padding=padding
-
+                [(feat, zi) for feat in inputs for zi in layers], # For each layer, one gives as input 'q', 'u', 'v'
+                [(feat, z) for feat in targets],                  # For each layer, one computes
+                zero_mean = zero_mean,
+                padding = padding
             ) for z in layers
         ]
 
-        # Train models on dataset and save them
+        # Displaying information over terminal (1)
+        print("---------------")
+        print("FCNN - Training")
+        print("---------------")
+
+        # Stores the trained models
         trained = []
+
+        # Looping over each model
         for z, model in enumerate(models):
+
+            # Creation of the model path
             model_dir = os.path.join(directory, f"models/{z}")
+
+            # Already exists (What is model 2)
             if os.path.exists(model_dir):
                 models2.append(FullyCNN.load(model_dir))
+
+            # Training of the current model
             else:
+
+                # Retreives the input and outputs
                 X = model.extract_inputs(dataset)
                 Y = model.extract_targets(dataset)
-                model.fit(X, Y, num_epochs=num_epochs, **kw)
-                model.save(os.path.join(directory, f"models/{z}"))
+
+                # Training the model
+                model.fit(X, Y, num_epochs = num_epochs, **kw)
+
+                # Saving the model
+                #model.save(os.path.join(directory, f"models/{z}"))
+
+                # Adding model to the list of trained one
                 trained.append(model)
 
         # Return the trained parameterization
-        return cls(directory, models=trained)
+        return cls(directory, models = trained)
