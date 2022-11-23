@@ -21,6 +21,7 @@
 
 import os
 import glob
+import time
 import pyqg
 import pickle
 import torch
@@ -29,9 +30,9 @@ import torch.optim as optim
 import numpy as np
 import xarray as xr
 
-from collections                            import OrderedDict
-from torch.autograd                         import grad, Variable
-from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
+from collections                              import OrderedDict
+from torch.autograd                           import grad, Variable
+from pyqg_parameterization_benchmarks.utils   import FeatureExtractor, Parameterization
 
 #----------------------------------------------------------------------------------------
 #                 Convolutional neural network - Architecture definition
@@ -307,6 +308,43 @@ class ChannelwiseScaler(BasicScaler):
         super().__init__(mu, sd)
 
 #----------------------------------------------------------------------------------------
+#                 Convolutional neural network - Information over terminal
+#----------------------------------------------------------------------------------------
+# Used to print a basic section title in terminal
+def section(title = "UNKNOWN"):
+
+    # Number of letters to determine section size
+    title_size = len(title)
+
+    # Section title boundaries
+    boundary  = "-"
+    for i in range(title_size + 1):
+        boundary += "-"
+
+    # Printing section
+    print(boundary)
+    print(f" {title} ")
+    print(boundary)
+
+# Used to display a simple progress bar while training for 1 epoch
+def progressBar(loss_training, estimated_time_epoch, nb_epoch_left, percent, width = 40):
+
+    # Setting up the useful information
+    left          = width * percent // 100
+    right         = width - left
+    tags          = "#" * int(left)
+    spaces        = " " * int(right)
+    percents      = f"{percent:.2f} %"
+    loss_training = f"{loss_training * 1:.4f}"
+
+    # Computing timings
+    estimated_time_total = f"{nb_epoch_left * estimated_time_epoch:.2f} s"
+
+    # Displaying a really cool progress bar !
+    print("\r[", tags, spaces, "] - ", percents, " | Loss (Training) = ", loss_training,
+          " | Total time left : ", estimated_time_total, " | ", sep = "", end = "", flush = True)
+
+#----------------------------------------------------------------------------------------
 #             MODIFY - Convolutional neural network - Training functions
 #----------------------------------------------------------------------------------------
 def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
@@ -347,11 +385,23 @@ def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate 
     scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(num_epochs/2), int(num_epochs * 3/4), int(num_epochs * 7/8)], gamma=0.1)
     criterion = nn.MSELoss()
 
-    # Displaying information over terminal
+    # Used to compute training progression bar (1)
+    size_train = len(inputs)
+    epoch_time = 0
+
     # Start training
     for epoch in range(num_epochs):
         epoch_loss  = 0.0
         epoch_steps = 0
+
+        # Display useful information over terminal (1)
+        print("Epoch : ", epoch + 1, "/", num_epochs)
+
+        # Used to compute training progression bar (2)
+        index = batch_size
+
+        # Used to approximate time left for current epoch and in total
+        start      = time.time()
 
         # Retreiving a batch of data
         for x, y in minibatch(inputs, targets, batch_size = batch_size):
@@ -371,11 +421,20 @@ def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate 
             optimizer.step()
 
             # Updating epoch info ! Would be nice to upgrade it !
-            epoch_loss += loss.item()
-            epoch_steps += 1
+            epoch_loss   += loss.item()
+            epoch_steps  += 1
+            nb_epoch_left = num_epochs - epoch
+            percentage    = (index/size_train) * 100 if (index/size_train) <= 1 else 100
 
-        # Displaying information over terminal
-        print(f"Loss after Epoch {epoch+1}: {epoch_loss/epoch_steps}")
+            # Displaying information over terminal (2)
+            progressBar(epoch_loss/epoch_steps, epoch_time, nb_epoch_left, percentage)
+            index += batch_size
+
+        # Updating timing
+        epoch_time    = time.time() - start
+
+        # Just to make sure there is no overlap between progress bar and section
+        print(" ")
 
         # Updating the scheduler to update learning rate !
         scheduler.step()
@@ -428,14 +487,10 @@ class FCNNParameterization(Parameterization):
         return preds
 
     @classmethod
-    def test(cls):
-        print("yes")
-
-    @classmethod
     def train_on(cls, dataset, directory, inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'],
                       num_epochs = 50, zero_mean = True, padding = 'circular', **kw):
 
-        # Retreives the number of layers of the simulation
+        # Retreives the numbzr of layers of the simulation
         layers = range(len(dataset.lev))
 
         # For each layer, one creates a FCNN which has:
@@ -453,9 +508,7 @@ class FCNNParameterization(Parameterization):
         ]
 
         # Displaying information over terminal (1)
-        print("---------------")
-        print("FCNN - Training")
-        print("---------------")
+        section("Fully Convolutional neural network - Training")
 
         # Stores the trained models
         trained = []
@@ -466,9 +519,13 @@ class FCNNParameterization(Parameterization):
             # Creation of the model path
             model_dir = os.path.join(directory, f"models/{z}")
 
+            # Displaying information over terminal (2)
+            section(f"Model - z = {z}")
+
             # Already exists (What is model 2)
             if os.path.exists(model_dir):
-                models2.append(FullyCNN.load(model_dir))
+                pass
+                #models2.append(FullyCNN.load(model_dir))
 
             # Training of the current model
             else:
@@ -481,7 +538,7 @@ class FCNNParameterization(Parameterization):
                 model.fit(X, Y, num_epochs = num_epochs, **kw)
 
                 # Saving the model
-                #model.save(os.path.join(directory, f"models/{z}"))
+                model.save(os.path.join(directory, f"models/{z}"))
 
                 # Adding model to the list of trained one
                 trained.append(model)

@@ -24,7 +24,7 @@ def make_custom_gplearn_functions(ds):
     adv = lambda x: apply_spatial(extractor.advected, x)
 
     # create gplearn function objects to represent these transformations
-    return [          
+    return [
         gplearn.functions._Function(function=ddx, name='ddx', arity=1),
         gplearn.functions._Function(function=ddy, name='ddy', arity=1),
         gplearn.functions._Function(function=lap, name='laplacian', arity=1),
@@ -41,7 +41,7 @@ def run_gplearn_iteration(ds, target,
     x = np.array([ds[feature].data.reshape(-1)
                 for feature in base_features]).T
     y = target.reshape(-1)
-    
+
     gplearn_kwargs = dict(
         population_size=5000,
         generations=50,
@@ -55,7 +55,7 @@ def run_gplearn_iteration(ds, target,
         metric='pearson', # IMPORTANT: fit using pearson correlation, not MSE
         const_range=(-2,2),
     )
-    
+
     gplearn_kwargs.update(**kwargs)
 
     # Configure gplearn to run with a relatively small population
@@ -84,20 +84,20 @@ class LinearSymbolicRegression(Parameterization):
     @property
     def targets(self):
         return [self.target]
-    
+
     @property
     def models(self):
         return [self.lr1, self.lr2]
-        
+
     def predict(self, m):
         extract = FeatureExtractor(m)
-        
+
         x = extract(self.inputs)
 
         preds = []
-        
+
         # Do some slightly annoying reshaping to properly apply LR coefficients
-        # to data that may or may not have extra batch dimensions 
+        # to data that may or may not have extra batch dimensions
         for z, lr in enumerate(self.models):
             data_indices = [slice(None) for _ in x.shape]
             data_indices[-3] = z
@@ -107,12 +107,12 @@ class LinearSymbolicRegression(Parameterization):
             c_z = lr.coef_[tuple(coef_indices)]
             pred_z = (x_z * c_z).sum(axis=0)
             preds.append(pred_z)
-            
+
         preds = np.stack(preds, axis=-3)
         res = {}
         res[self.target] = preds
         return res
-    
+
     @classmethod
     def fit(kls, ds, inputs, target='q_subgrid_forcing'):
         lrs = []
@@ -124,8 +124,8 @@ class LinearSymbolicRegression(Parameterization):
                     extract(target, flat=True)
                 )
             )
-        return kls(*lrs, inputs, target)  
-    
+        return kls(*lrs, inputs, target)
+
 def corr(a,b):
     return pearsonr(np.array(a.data).ravel(), np.array(b.data).ravel())[0]
 
@@ -135,7 +135,7 @@ def hybrid_symbolic_regression(ds, target='q_subgrid_forcing', max_iters=10, ver
     terms = []
     vals = []
     lrs = []
-    
+
     try:
         for i in range(max_iters):
             for lev in [0,1]:
