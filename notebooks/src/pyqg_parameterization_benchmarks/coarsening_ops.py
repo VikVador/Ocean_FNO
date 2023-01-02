@@ -22,6 +22,7 @@
 import pyqg
 import numpy as np
 import gcm_filters
+from tqdm.notebook import tqdm, trange
 
 from scipy.stats import pearsonr
 from functools   import cached_property
@@ -68,7 +69,7 @@ class Coarsener:
 
         # Saving the high resolution simulation
         self.m1 = high_res_model
-        self.m1._invert() # ?
+        self.m1._invert()
 
         # Initialization of a low resolution PYQG model using
         # the parameters coming from the high resolution (to make them match)
@@ -81,6 +82,21 @@ class Coarsener:
         # from the potential vorticity ! I think this is what it does)
         self.m2._invert()
         self.m2._calc_derived_fields()
+
+    @property
+    def q_forcing_total(self):
+        """
+        Compute total forcing between two models.
+        """
+        for m in [self.m1, self.m2]:
+            m._invert()
+            m._do_advection()
+            m._do_friction()
+
+        dqdt_bar = self.coarsen(self.m1.dqhdt)
+        dqbar_dt = self.to_real(self.m2.dqhdt)
+
+        return dqdt_bar, dqbar_dt, dqdt_bar - dqbar_dt
 
     def to_real(self, var):
         """
@@ -105,17 +121,6 @@ class Coarsener:
             if var.shape == m.q.shape:
                 return m.fft(var)
         return var
-
-    @property
-    def q_forcing_total(self):
-        """
-        Compute total forcing between two models.
-        """
-        for m in [self.m1, self.m2]:
-            m._invert()
-            m._do_advection()
-            m._do_friction()
-        return self.coarsen(self.m1.dqhdt) - self.to_real(self.m2.dqhdt)
 
     def subgrid_forcing(self, var):
         """
