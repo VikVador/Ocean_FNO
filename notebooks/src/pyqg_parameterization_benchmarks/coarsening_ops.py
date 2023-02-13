@@ -78,8 +78,7 @@ class Coarsener:
         # Filtering high resolution model and placing results in low resolution model
         self.m2.q = self.coarsen(self.m1.q)
 
-        # Recompute psi, u, and v (As I remember, all the state variables can be computed
-        # from the potential vorticity ! I think this is what it does)
+        # Recompute psi, u, and v
         self.m2._invert()
         self.m2._calc_derived_fields()
 

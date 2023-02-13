@@ -524,8 +524,7 @@ class FCNNParameterization(Parameterization):
 
             # Already exists (What is model 2)
             if os.path.exists(model_dir):
-                pass
-                #models2.append(FullyCNN.load(model_dir))
+                trained.append(FullyCNN.load(model_dir))
 
             # Training of the current model
             else:
