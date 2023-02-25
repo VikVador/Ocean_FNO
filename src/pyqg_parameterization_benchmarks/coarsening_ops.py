@@ -22,9 +22,9 @@
 import pyqg
 import numpy as np
 import gcm_filters
-from tqdm.notebook import tqdm, trange
 
 from scipy.stats import pearsonr
+from tqdm.notebook import tqdm, trange
 from functools   import cached_property
 
 #----------
@@ -77,7 +77,7 @@ class Coarsener:
 
         # Filtering high resolution model and placing results in low resolution model
         self.m2.q = self.coarsen(self.m1.q)
-
+        
         # Recompute psi, u, and v
         self.m2._invert()
         self.m2._calc_derived_fields()

@@ -116,6 +116,7 @@ class FullyCNN(nn.Sequential):
     # As weird as it sounds, it computes and stores all the gradients associated to each minibatch
     def input_gradients(self, inputs, output_channel, j, i, device=None):
         if device is None:
+            print(torch.cuda.is_available())
             device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
             self.to(device)
 

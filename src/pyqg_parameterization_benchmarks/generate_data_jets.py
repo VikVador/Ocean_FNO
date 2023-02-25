@@ -13,10 +13,10 @@
 # ---------------------------------- PARAMETERS ----------------------------------
 
 # Define which simulation type to use to generate the high resolution data
-simulation_type = 2
+simulation_type = 1
 
 # Define at which frequency to save the results (Ex: if sampling = 1, each hour the data is saved)
-sampling_frequency = 1000
+sampling_frequency = 8
 
 # Define which operator to apply on the high resolution data
 operator_index = 1
@@ -28,7 +28,7 @@ train_size = 0.7
 save_HR_train = False
 
 # Define the name of the folder used to save the datasets (../datasets/save_folder)
-save_folder = "test"
+save_folder = "jets_big"
 
 # ---------------------------------- PARAMETERS ----------------------------------
 #
@@ -182,7 +182,8 @@ def run_simulations(model_HIGH_RESOLUTION, coarsening_index, sampling_freq = 100
 
         if model_HIGH_RESOLUTION.tc % sampling_freq == 0:
 
-            # Saving high resolution data
+            # Saving high resolution data (only last step to save memory)
+            #if model_HIGH_RESOLUTION.t == model_HIGH_RESOLUTION.tmax - 1:
             snapshots_HIGH_RESOLUTION.append(model_HIGH_RESOLUTION.to_dataset().copy(deep = True))
 
             # Creation of the coarsened data
@@ -232,7 +233,7 @@ def run_simulations(model_HIGH_RESOLUTION, coarsening_index, sampling_freq = 100
 # Definition of the parameters for each simulation type
 nx        = [256        , 256   , 256        , 256  ,  256, 256]
 dt        = [1          , 1     , 1          , 1    ,    1,   1]
-tmax      = [10         , 10    , 2          , 2    ,   10,  10]
+tmax      = [10         , 10    , 0.25       , 2    ,   10,  10]
 tavestart = [5          , 5     , 1          , 1    ,    5,   5]
 rek       = [5.789e-7   , 7e-08 , 5.789e-7   , 7e-08,   -1,  -1]
 delta     = [0.25       , 0.1   , 0.25       , 0.1  , 0.25, 0.1]
@@ -266,7 +267,7 @@ dataset_HIGH_RESOLUTION, dataset_LOW_RESOLUTION, model_LOW_RESOLUTION = run_simu
 # -- Saving --
 #
 # Complete path to saving folder
-saving_path = "../../../datasets/" + save_folder
+saving_path = "../../datasets/" + save_folder
 
 # Checks if the saving folder exists, if not, creates it
 if not os.path.exists(saving_path):

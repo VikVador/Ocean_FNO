@@ -1,0 +1,19 @@
+name: TFE
+channels:
+  - defaults
+dependencies:
+  - jupyter
+  - matplotlib
+  - scikit-learn
+  - scipy
+  - cudatoolkit
+  - numpy
+  - python=3.9.7
+  - pytorch
+  - xarray
+  - fsspec
+  - tqdm
+  - pip:
+    - gcm_filters
+    - gplearn
+    - pyqg
