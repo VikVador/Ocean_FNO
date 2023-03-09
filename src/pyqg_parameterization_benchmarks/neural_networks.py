@@ -177,24 +177,22 @@ class FullyCNN(nn.Sequential):
         return np.mean(np.sum((y_pred - y_true)**2, axis=1))
 
     # Used to start training a model
-    def fit(self, inputs, targets, rescale = False, **kw):
+    def fit(self, inputs, targets, inputs_val, targets_val, tensorboard, rescale = False, **kw):
 
         # Creation of a scaler for the input (mu = 0 and std = 1) if:
-        # - Rescale = true
-        # - The self variable 'input_scale' is not found
-        # - The self variable 'input_scale' is found BUT equal to NONE
         if rescale or not hasattr(self, 'input_scale') or self.input_scale is None:
             self.input_scale = ChannelwiseScaler(inputs)
+            inputs_val_scale = ChannelwiseScaler(inputs_val)
 
         # Creation of a scaler for the output (mu = 0 and std = 1) if:
-        # - Rescale = true
-        # - The self variable 'input_scale' is not found
-        # - The self variable 'input_scale' is found BUT equal to NONE
         if rescale or not hasattr(self, 'output_scale') or self.output_scale is None:
-            self.output_scale = ChannelwiseScaler(targets, zero_mean=self.is_zero_mean)
+            self.output_scale = ChannelwiseScaler(targets, zero_mean = self.is_zero_mean)
+            outputs_val_scale = ChannelwiseScaler(targets_val, zero_mean = self.is_zero_mean)
 
         # Going further into the training
-        train(self, self.input_scale.transform(inputs), self.output_scale.transform(targets), **kw)
+        train(self, self.input_scale.transform(inputs), self.output_scale.transform(targets), \
+                inputs_val_scale.transform(inputs_val), outputs_val_scale.transform(targets_val), \
+                tensorboard = tensorboard, **kw)
 
     # Save the model !
     def save(self, path):
@@ -328,21 +326,22 @@ def section(title = "UNKNOWN"):
     print(boundary)
 
 # Used to display a simple progress bar while training for 1 epoch
-def progressBar(loss_training, estimated_time_epoch, nb_epoch_left, percent, width = 40):
+def progressBar(loss_training, loss_validation, estimated_time_epoch, nb_epoch_left, percent, width = 40):
 
     # Setting up the useful information
-    left          = width * percent // 100
-    right         = width - left
-    tags          = "#" * int(left)
-    spaces        = " " * int(right)
-    percents      = f"{percent:.2f} %"
-    loss_training = f"{loss_training * 1:.4f}"
+    left            = width * percent // 100
+    right           = width - left
+    tags            = "#" * int(left)
+    spaces          = " " * int(right)
+    percents        = f"{percent:.2f} %"
+    loss_training   = f"{loss_training * 1:.3f}"
+    loss_validation = f"{loss_validation * 1:.3f}"
 
     # Computing timings
     estimated_time_total = f"{nb_epoch_left * estimated_time_epoch:.2f} s"
 
     # Displaying a really cool progress bar !
-    print("\r[", tags, spaces, "] - ", percents, " | Loss (Training) = ", loss_training,
+    print("\r[", tags, spaces, "] - ", percents, " | Loss (Training) = ", loss_training, " | Loss (Validation) = ", loss_validation,
           " | Total time left : ", estimated_time_total, " | ", sep = "", end = "", flush = True)
 
 #----------------------------------------------------------------------------------------
@@ -374,7 +373,7 @@ def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
         yield tuple(xform(array[idx]) for array in arrays)
 
 # Used to make the training a model, it could be nice to upgrade it !
-def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate = 0.001, device = None):
+def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs = 50, batch_size = 64, learning_rate = 0.001, device = None):
 
     # Looking for a GPU !
     if device is None:
@@ -389,11 +388,13 @@ def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate 
     # Used to compute training progression bar (1)
     size_train = len(inputs)
     epoch_time = 0
-
+    
     # Start training
     for epoch in range(num_epochs):
-        epoch_loss  = 0.0
-        epoch_steps = 0
+        epoch_loss      = 0.0
+        epoch_loss_val  = 0.0
+        epoch_steps     = 0
+        epoch_steps_val = 0
 
         # Display useful information over terminal (1)
         print("Epoch : ", epoch + 1, "/", num_epochs)
@@ -404,6 +405,9 @@ def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate 
         # Used to approximate time left for current epoch and in total
         start      = time.time()
 
+        # --------------------
+        #       Training
+        # --------------------
         # Retreiving a batch of data
         for x, y in minibatch(inputs, targets, batch_size = batch_size):
 
@@ -428,9 +432,37 @@ def train(net, inputs, targets, num_epochs = 50, batch_size = 64, learning_rate 
             percentage    = (index/size_train) * 100 if (index/size_train) <= 1 else 100
 
             # Displaying information over terminal (2)
-            progressBar(epoch_loss/epoch_steps, epoch_time, nb_epoch_left, percentage)
+            progressBar(epoch_loss/epoch_steps, 0, epoch_time, nb_epoch_left, percentage)
             index += batch_size
+            
+        # Updating tensorboard (1)
+        tensorboard.add_scalar("Training loss", epoch_loss/epoch_steps, global_step = epoch)
+            
+        # --------------------
+        #      Validation
+        # --------------------        
+        with torch.no_grad():  
+            
+            # Retreiving a batch of data
+            for x, y in minibatch(inputs_val, targets_val, batch_size = batch_size):
 
+                # Computing prediction and storing target
+                yhat  = net.forward(x.to(device))
+                ytrue = y.to(device)
+
+                # Computing loss
+                loss = criterion(yhat, ytrue)
+
+                # Updating epoch info ! Would be nice to upgrade it !
+                epoch_loss_val  += loss.item()
+                epoch_steps_val += 1
+                
+                # Displaying information over terminal (2)
+                progressBar(epoch_loss/epoch_steps, epoch_loss_val/epoch_steps_val, epoch_time, nb_epoch_left, percentage)
+                
+            # Updating tensorboard (2)
+            tensorboard.add_scalar("Validation loss", epoch_loss_val/epoch_steps_val, global_step = epoch)
+                
         # Updating timing
         epoch_time    = time.time() - start
 
@@ -488,17 +520,12 @@ class FCNNParameterization(Parameterization):
         return preds
 
     @classmethod
-    def train_on(cls, dataset, directory, inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'],
+    def train_on(cls, dataset, dataset_val, directory, tensorboard, inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'],
                       num_epochs = 50, zero_mean = True, padding = 'circular', **kw):
 
         # Retreives the numbzr of layers of the simulation
         layers = range(len(dataset.lev))
 
-        # For each layer, one creates a FCNN which has:
-        # - Inputs    : 'q', 'u', 'v' of each layer
-        # - Outputs   : 'q_subgrid_forcing' of the current layer
-        # - Zero mean : true
-        # - Padding   : 'circular'
         models = [
             FullyCNN(
                 [(feat, zi) for feat in inputs for zi in layers], # For each layer, one gives as input 'q', 'u', 'v'
@@ -530,12 +557,16 @@ class FCNNParameterization(Parameterization):
             # Training of the current model
             else:
 
-                # Retreives the input and outputs
+                # Retreives the input and outputs of training set
                 X = model.extract_inputs(dataset)
                 Y = model.extract_targets(dataset)
+                
+                # Retreives the input and outputs of validation set
+                X_val = model.extract_inputs(dataset_val)
+                Y_val = model.extract_targets(dataset_val)
 
                 # Training the model
-                model.fit(X, Y, num_epochs = num_epochs, **kw)
+                model.fit(X, Y, X_val, Y_val, tensorboard, num_epochs = num_epochs, **kw)
 
                 # Saving the model
                 model.save(os.path.join(directory, f"models/{z}"))
