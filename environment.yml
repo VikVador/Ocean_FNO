@@ -13,6 +13,9 @@ dependencies:
   - xarray
   - fsspec
   - tqdm
+  - tensorboard
+  - seaborn
+  - pandas
   - pip:
     - gcm_filters
     - gplearn
