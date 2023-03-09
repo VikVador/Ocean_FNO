@@ -1,4 +1,4 @@
-<img src="assets/header_git.gif" />
+<img src="notebooks/assets/header_notebook.jpg" />
 <hr>
 <p align="center">
 <b style="font-size:30vw;">Ocean subgrid parameterization in an indealized model using machine learning</b>
