@@ -3,11 +3,13 @@ __pycache__/
 *.py[cod]
 *$py.class
 **.DS_Store
-**.png
 **.pdf
 **.nc
-**.png
 **.svg
+**.png
+
+literature/
+datasets/
 
 # C extensions
 *.so

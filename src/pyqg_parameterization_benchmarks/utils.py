@@ -1,15 +1,42 @@
+#------------------------------------------------------------------------------
+#
+#           Ocean subgrid parameterization using machine learning
+#
+#                             Graduation work
+#
+#------------------------------------------------------------------------------
+# @ Victor Mangeleer
+#
+# -----------------
+#   Documentation
+# -----------------
+# This file contains all the functions used throughout all the .py
+# (for asserts, loading data, computing subgrid terms, ...)
+#
+# -----------------
+#     Librairies
+# -----------------
+#
+# --------- Standard ---------
 import re
 import pyqg
 import operator
-import numpy as np
-import xarray as xr
+import numpy    as np
+import xarray   as xr
 
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                          Parameterization (handler class)
+#
+# ----------------------------------------------------------------------------------------------------------
 class Parameterization(pyqg.Parameterization):
-    """Helper class for defining parameterizations. This extends the normal
-    pyqg parameterization framework to handle prediction of either subgrid
-    forcings or fluxes, as well as to apply to either pyqg.Models or
-    xarray.Datasets."""
-    
+    """
+    Documentation
+    -------------
+    Helper class for defining parameterizations. This extends the normal pyqg parameterization 
+    framework to handle prediction of either subgrid forcings or fluxes, as well as to apply 
+    to either pyqg.Models or xarray.Datasets.
+    """
     @property
     def targets(self):
         raise NotImplementedError
@@ -19,7 +46,7 @@ class Parameterization(pyqg.Parameterization):
         
     @property
     def nx(self):
-        return 64 # Future work should generalize this.
+        return 64
 
     @property
     def parameterization_type(self):
@@ -48,9 +75,15 @@ class Parameterization(pyqg.Parameterization):
         else:
             return tuple(arr(preds[k]) for k in keys)
 
-    def run_online(self, sampling_freq=1000, **kw):
-        """Run a parameterized pyqg.QGModel, saving snapshots every 1000h."""
-        
+    # ----------------------------------------------------------------------------------------------------------
+    #                         Parameterization - Run Online (PYQG simulation + Parameterization)
+    # ----------------------------------------------------------------------------------------------------------
+    def run_online(self, sampling_freq = 1000, **kw):
+        """
+        Documentation
+        -------------
+        Run a parameterized pyqg.QGModel, saving snapshots every 1000h.
+        """
         # Initialize a pyqg model with this parameterization
         params = dict(kw)
         
@@ -81,42 +114,62 @@ class Parameterization(pyqg.Parameterization):
 
         return ds
 
-    def test_offline(self, dataset):
-        """Evaluate the parameterization on an offline dataset,
-        computing a variety of metrics."""
-        
+    # ----------------------------------------------------------------------------------------------------------
+    #                                        Parameterization - Test Offline 
+    # ----------------------------------------------------------------------------------------------------------
+    def test_offline(self, dataset, prefix):
+        """
+        Documentation:
+        --------------
+        Evaluate the parameterization on an offline dataset, computing a variety of metrics.
+        """
+        # Retreive targets
         test = dataset[self.targets]
         
-        for key, val in self.predict(dataset).items():
-            truth = test[key]
+        # ------ Computing predictions -----
+        pred = None
+        
+        if prefix == "FCNN":
+            pred = self.predict(dataset).items()
+            
+        if prefix == "KASKADE":
+            pred = self.predict(dataset).items()
+        
+        # ------ Computing metrics -----
+        for key, val in pred:
+            
+            # Base values (error, mean, variance, ...)
+            truth                      = test[key]
             test[f"{key}_predictions"] = truth*0 + val
-            preds = test[f"{key}_predictions"]
-            error = (truth - preds)**2
-
-            true_centered = (truth - truth.mean())
-            pred_centered = (preds - preds.mean())
-            true_var = true_centered**2
-            pred_var = pred_centered**2
-            true_pred_cov = true_centered * pred_centered
+            preds                      = test[f"{key}_predictions"]
+            error                      = (truth - preds) ** 2
+            true_centered              = (truth - truth.mean())
+            pred_centered              = (preds - preds.mean())
+            true_var                   = true_centered ** 2
+            pred_var                   = pred_centered ** 2
+            true_pred_cov              = true_centered * pred_centered
 
             def dims_except(*dims):
                 return [d for d in test[key].dims if d not in dims]
             
-            time = dims_except('x','y','lev')
+            # Variety of values
+            time  = dims_except('x','y','lev')
             space = dims_except('time','lev')
-            both = dims_except('lev')
+            both  = dims_except('lev')
+            
+            test[f"{key}_spatial_mse"]          = error.mean(dim=time)
+            test[f"{key}_temporal_mse"]         = error.mean(dim=space)
+            test[f"{key}_mse"]                  = error.mean(dim=both)
 
-            test[f"{key}_spatial_mse"] = error.mean(dim=time)
-            test[f"{key}_temporal_mse"] = error.mean(dim=space)
-            test[f"{key}_mse"] = error.mean(dim=both)
+            # Similarity metric transformation
+            test[f"{key}_spatial_skill"]        = 1 - test[f"{key}_spatial_mse"]  / true_var.mean(dim=time)
+            test[f"{key}_temporal_skill"]       = 1 - test[f"{key}_temporal_mse"] / true_var.mean(dim=space)
+            test[f"{key}_skill"]                = 1 - test[f"{key}_mse"]          / true_var.mean(dim=both)
 
-            test[f"{key}_spatial_skill"] = 1 - test[f"{key}_spatial_mse"] / true_var.mean(dim=time)
-            test[f"{key}_temporal_skill"] = 1 - test[f"{key}_temporal_mse"] / true_var.mean(dim=space)
-            test[f"{key}_skill"] = 1 - test[f"{key}_mse"] / true_var.mean(dim=both)
-
-            test[f"{key}_spatial_correlation"] = xr.corr(truth, preds, dim=time)
+            # Pearson correlation
+            test[f"{key}_spatial_correlation"]  = xr.corr(truth, preds, dim=time)
             test[f"{key}_temporal_correlation"] = xr.corr(truth, preds, dim=space)
-            test[f"{key}_correlation"] = xr.corr(truth, preds, dim=both)
+            test[f"{key}_correlation"]          = xr.corr(truth, preds, dim=both)
 
         for metric in ['correlation', 'mse', 'skill']:
             test[metric] = sum(
@@ -125,10 +178,53 @@ class Parameterization(pyqg.Parameterization):
 
         return test
 
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                          Online Test (Energy budget comparaison)
+#
+# ----------------------------------------------------------------------------------------------------------
+def energy_budget_term(model, term):
+    val = model[term]
+    if 'paramspec_' + term in model:
+        val += model['paramspec_' + term]
+    return val.sum('l')
+
+def energy_budget_figure(models, skip=0):
+    import matplotlib.pyplot as plt
+    fig = plt.figure(figsize=(12,5))
+    vmax = 0
+    for i,term in enumerate(['KEflux','APEflux','APEgenspec','KEfrictionspec']):
+        plt.subplot(1,4,i+1,title=term)
+        plt.axhline(0,color='gray', ls='--')
+        
+        for model, label in models:
+            spec = energy_budget_term(model, term)
+            plt.semilogx(model.k[skip:], spec[skip:],
+                         label=label, lw=3, ls=('--' if '+' in label else '-'))
+            vmax = max(vmax, spec[skip:].max())
+        plt.grid(which='both',alpha=0.25)
+        if i == 0: plt.ylabel("Energy transfer $[m^2 s^{-3}]$")
+        else: plt.gca().set_yticklabels([])
+        if i == 3: plt.legend()
+        plt.xlabel("Zonal wavenumber $[m^{-1}]$")
+    for ax in fig.axes:
+        ax.set_ylim(-vmax, vmax)
+    plt.tight_layout()
+    return fig
+
+
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                              Feature extraction
+#
+# ----------------------------------------------------------------------------------------------------------
 class FeatureExtractor:
-    """Helper class for taking spatial derivatives and translating string
-    expressions into data. Works with either pyqg.Model or xarray.Dataset."""
-    
+    """
+    Documentation
+    -------------
+    Helper class for taking spatial derivatives and translating string expressions 
+    into data. Works with either pyqg.Model or xarray.Dataset.
+    """
     def __call__(self, feature_or_features, flat=False):
         arr = lambda x: x.data if isinstance(x, xr.DataArray) else x
         if isinstance(feature_or_features, str):
@@ -269,31 +365,3 @@ class FeatureExtractor:
         else:
             raise KeyError(q)
 
-def energy_budget_term(model, term):
-    val = model[term]
-    if 'paramspec_' + term in model:
-        val += model['paramspec_' + term]
-    return val.sum('l')
-
-def energy_budget_figure(models, skip=0):
-    import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(12,5))
-    vmax = 0
-    for i,term in enumerate(['KEflux','APEflux','APEgenspec','KEfrictionspec']):
-        plt.subplot(1,4,i+1,title=term)
-        plt.axhline(0,color='gray', ls='--')
-        
-        for model, label in models:
-            spec = energy_budget_term(model, term)
-            plt.semilogx(model.k[skip:], spec[skip:],
-                         label=label, lw=3, ls=('--' if '+' in label else '-'))
-            vmax = max(vmax, spec[skip:].max())
-        plt.grid(which='both',alpha=0.25)
-        if i == 0: plt.ylabel("Energy transfer $[m^2 s^{-3}]$")
-        else: plt.gca().set_yticklabels([])
-        if i == 3: plt.legend()
-        plt.xlabel("Zonal wavenumber $[m^{-1}]$")
-    for ax in fig.axes:
-        ax.set_ylim(-vmax, vmax)
-    plt.tight_layout()
-    return fig

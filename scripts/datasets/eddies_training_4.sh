@@ -15,9 +15,9 @@
 #SBATCH --export=ALL                    # Export all environment variables
 #SBATCH --output=eddies_training_4.log  # Log-file (important!)
 #SBATCH --cpus-per-task=4               # Number of CPU cores to allocate
-#SBATCH --mem-per-cpu=16G               # Memory to allocate per allocated CPU core
+#SBATCH --mem-per-cpu=32G               # Memory to allocate per allocated CPU core
 #SBATCH --gres=gpu:0                    # Number of GPU's
-#SBATCH --time=0:30:00                  # Max execution time
+#SBATCH --time=1:00:00                  # Max execution time
 #
 # Activate your Anaconda environment
 source ~/.bashrc
@@ -30,10 +30,10 @@ cd ../../src/pyqg_parameterization_benchmarks/
 #   Script parameters
 # ---------------------
 nbthreads=4
-memcpu=16
+memcpu=32
 savehr=False
 
 # ---------------------
 #   Script parameters
 # ---------------------
-python -u generate_dataset.py --save_folder eddies_training_4 --simulation_type 4 --target_sample_size 1000 --operator_cf 1 --skipped_time 0.5 --nb_threads $nbthreads --memory $memcpu --save_high_res $savehr
+python -u generate_dataset.py --save_folder eddies_training_4 --simulation_type 0 --target_sample_size 3000 --operator_cf 1 --skipped_time 0.5 --nb_threads $nbthreads --memory $memcpu --save_high_res $savehr

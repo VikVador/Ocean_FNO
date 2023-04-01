@@ -1,11 +1,28 @@
+#------------------------------------------------------------------------------
+#
+#           Ocean subgrid parameterization using machine learning
+#
+#                             Graduation work
+#
+#------------------------------------------------------------------------------
+# @ Victor Mangeleer
+#
+# -----------------
+#     Librairies
+# -----------------
+#
+# --------- Standard ---------
 import pyqg
 import gplearn
 import gplearn.genetic
-import numpy as np
-import xarray as xr
-from scipy.stats import pearsonr
-from sklearn.linear_model import LinearRegression
-from pyqg_parameterization_benchmarks.utils import FeatureExtractor, Parameterization
+import numpy                as np
+import xarray               as xr
+from   scipy.stats          import pearsonr
+from   sklearn.linear_model import LinearRegression
+
+# --------- PYQG Benchmark ---------
+from pyqg_parameterization_benchmarks.utils      import FeatureExtractor, Parameterization
+
 
 def make_custom_gplearn_functions(ds):
     """Define custom gplearn functions for spatial derivatives that are specific

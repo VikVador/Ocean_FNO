@@ -13,34 +13,17 @@
 #
 # --------- Standard ---------
 import os
-import sys
-import json
-import glob
 import math
-import torch
 import random
-import fsspec
-import matplotlib
-import numpy             as np
-import xarray            as xr
-import matplotlib.pyplot as plt
-from argparse import ArgumentParser
-from scipy.stats import gaussian_kde
+import argparse
 
 # --------- PYQG ---------
 import pyqg
-import pyqg.diagnostic_tools
-from   pyqg.diagnostic_tools import calc_ispec         as _calc_ispec
-import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
-
-calc_ispec = lambda *args, **kwargs: _calc_ispec(*args, averaging = False, truncate =False, **kwargs)
 
 # --------- PYQG Benchmark ---------
-from pyqg_parameterization_benchmarks.utils           import *
-from pyqg_parameterization_benchmarks.utils_TFE       import *
-from pyqg_parameterization_benchmarks.plots_TFE       import *
-from pyqg_parameterization_benchmarks.online_metrics  import diagnostic_differences
-from pyqg_parameterization_benchmarks.neural_networks import FullyCNN, FCNNParameterization
+from pyqg_parameterization_benchmarks.utils     import *
+from pyqg_parameterization_benchmarks.utils_TFE import *
+from pyqg_parameterization_benchmarks.plots_TFE import *
 
 # -----------------------------------------------------
 #                         Main
@@ -52,7 +35,7 @@ if __name__ == '__main__':
     # ----------------------------------
     # Definition of the help message that will be shown on the terminal
     usage = """
-    USAGE: python generate_dataset.py --save_folder test     <X>                                                                         
+    USAGE: python generate_dataset.py --save_folder          <X>                                                                         
                                       --simulation_type      <X>                                                                               
                                       --target_sample_size   <X>                                                                              
                                       --operator_cf          <X>                                                                              
@@ -62,29 +45,29 @@ if __name__ == '__main__':
                                       --save_high_res        <X>
     """
     # Initialization of the parser
-    parser = ArgumentParser(usage)
+    parser = argparse.ArgumentParser(usage)
 
     # Definition of the possible stuff to be parsed
     parser.add_argument(
         '--simulation_type',
-        help = 'Choose the type of simulation used to generate the dataset',
+        help = 'Type of simulation used to generate the dataset',
         type = int,
         choices = [0, 1, 2, 3, 4, 5])
 
     parser.add_argument(
         '--target_sample_size',
-        help = 'Choose the number of samples expected to be in the datasets (nb_sample >= target_sample_size)',
+        help = 'Number of samples expected to be in the datasets (nb_sample >= target_sample_size)',
         type = int)
 
     parser.add_argument(
         '--operator_cf',
-        help = 'Choose the coarsening and filtering operator applied on the high resolution simulation',
+        help = 'Coarsening and filtering operator applied on the high resolution simulation',
         type = int,
         choices = [1, 2, 3])
 
     parser.add_argument(
         '--nb_threads',
-        help = 'Choose the number of threads used to run the simulation',
+        help = 'Number of threads used to run the simulation',
         type = int,
         choices = [1, 2, 3, 4])
 
@@ -95,7 +78,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--save_folder',
-        help = 'Choose the name of the folder used to save the datasets',
+        help = 'Name of the folder to save the dataset(s)',
         type = str)
 
     parser.add_argument(
@@ -107,7 +90,7 @@ if __name__ == '__main__':
 
     parser.add_argument(
         '--skipped_time',
-        help = 'Choose the time [year] at which the sampling of the simulation starts',
+        help = 'Time [year] at which the sampling of the simulation starts',
         type = float,
         default = 0.5)
 
@@ -120,7 +103,10 @@ if __name__ == '__main__':
     # ----------------------------------
     #              Asserts
     # ----------------------------------
-    # Contains simulation duration
+    # Update of save_high_res argument to bool type
+    args.save_high_res = True if args.save_high_res == "True" else False
+    
+    # Contains simulation duration (for assertion)
     sim_duration = [10, 10, 2, 2, 10, 10]
 
     # Checking if there are enough samples to reach the target sample size (1)
@@ -136,6 +122,8 @@ if __name__ == '__main__':
     # Compute the needed memory
     nd_memory = needed_memory(nb_samples, args.save_high_res)
 
+    print(nd_memory)
+    
     # Checking if enough memory has been allocated
     assert args.memory > nd_memory, \
         f"Assert: Not enough memory to generate dataset, {nd_memory} [Gb] are needed"
@@ -143,9 +131,6 @@ if __name__ == '__main__':
     # Checking if there are enough samples to reach the target sample size (2)
     assert nb_samples >= args.target_sample_size, \
         f"Assert: Impossible to reach target sample size ({args.target_sample_size}), reduce the skipped time ({args.skipped_time} [Years])"
-
-    # Update of save_high_res argument to bool type
-    args.save_high_res = True if args.save_high_res == "True" else False
 
     # ----------------------------------
     #      Simulation initialization
@@ -162,7 +147,7 @@ if __name__ == '__main__':
     delta     = [0.25       , 0.1   , 0.25       , 0.1  , 0.25, 0.1]
     beta      = [1.5 * 1e-11, 1e-11 , 1.5 * 1e-11, 1e-11,   -1,  -1]
 
-    # Radom parameter values
+    # Random parameter values for coriolis and bottom drag
     rek_random  = random.uniform(5.7, 5.9)   * 1e-7  if simulation_type < 5 else \
                   random.uniform(6.9, 7.1)   * 1e-8
 

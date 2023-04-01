@@ -13,37 +13,20 @@
 #
 # --------- Standard ---------
 import os
-import sys
-import json
-import glob
 import math
-import torch
-import random
-import fsspec
-import matplotlib
-import numpy             as np
-import pandas            as pd
-import xarray            as xr
-import seaborn           as sns
-import matplotlib.pyplot as plt
-from argparse import ArgumentParser
-from scipy.stats import gaussian_kde
+import argparse 
+import numpy                 as np
+import pandas                as pd
+import seaborn               as sns
+import matplotlib.pyplot     as plt
 from torch.utils.tensorboard import SummaryWriter
 
-# --------- PYQG ---------
-import pyqg
-import pyqg.diagnostic_tools
-from   pyqg.diagnostic_tools import calc_ispec         as _calc_ispec
-import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
-
-calc_ispec = lambda *args, **kwargs: _calc_ispec(*args, averaging = False, truncate =False, **kwargs)
-
 # --------- PYQG Benchmark ---------
-from pyqg_parameterization_benchmarks.utils           import *
-from pyqg_parameterization_benchmarks.utils_TFE       import *
-from pyqg_parameterization_benchmarks.plots_TFE       import *
-from pyqg_parameterization_benchmarks.online_metrics  import diagnostic_differences
-from pyqg_parameterization_benchmarks.neural_networks import FullyCNN, FCNNParameterization
+from pyqg_parameterization_benchmarks.utils                  import *
+from pyqg_parameterization_benchmarks.utils_TFE              import *
+from pyqg_parameterization_benchmarks.plots_TFE              import *
+from pyqg_parameterization_benchmarks.neural_networks        import FullyCNN, FCNNParameterization
+from pyqg_parameterization_benchmarks.kaskade                import Kaskade,  KASKADEParameterization
 
 # -----------------------------------------------------
 #                         Main
@@ -55,21 +38,22 @@ if __name__ == '__main__':
     # ----------------------------------
     # Definition of the help message that will be shown on the terminal
     usage = """
-    USAGE:      python offline.py --folder_offline  <X>
-                                  --folder_models   <X>             
+    USAGE:      python offline.py --folder_offline   <X>
+                                  --folder_models    <X>
+                                  --memory           <X>
     """
     # Initialization of the parser
-    parser = ArgumentParser(usage)
+    parser = argparse.ArgumentParser(usage)
 
     # Definition of the possible stuff to be parsed
     parser.add_argument(
         '--folder_offline',
-        help  = 'Choose the folders used to load data as offline test data',
+        help  = 'Folder used to load datasets used for the offline test',
         nargs = '+')
     
     parser.add_argument(
         '--folder_models',
-        help = 'Choose the folder (inside the model folder) used to load all the different models to be tested',
+        help = 'Folder used to load all the models to be tested',
         type = str,
         default = "base")
 
@@ -107,35 +91,54 @@ if __name__ == '__main__':
     # ----------------------------------
     #          Loading datasets
     # ----------------------------------
-    _, _, data_ALR_offline = load_data(args.folder_offline, datasets_type = ["ALR"])
+    _, _, data_ALR_offline  = load_data(args.folder_offline, datasets_type = ["ALR"])
     
     # Display information over terminal (2)
     section("Loading parameterizations")
     
     # ----------------------------------
-    #      Loading parameterization
+    #     Accessing parameterizations
     # ----------------------------------
+    # Prefix of known parameterizations
+    whitelist = ["FCNN", "KASKADE"]
+    
+    # Stores the type of parameterization tested (based on prefix)
+    prefix_parameterizations = []
+    
     # Complete path to model folder
     path_model_folder = "../../models/" + args.folder_models + "/"
     
     # Retreives a list of all models
     models_name_c = os.listdir(path_model_folder)
     
-    # Whitelist of parameterizations used for testing
-    whitelist = ["FCNN"]
-    
     # Cleaning list of model names (Removing jupyter checkpoints, ...)
     models_name = list()
     for n in models_name_c:
         for w in whitelist:
-            
+
             # Checks if the name is related to a parameterization
             if w in n:
                 models_name.append(n)
+                prefix_parameterizations.append(w)
                 break
     
-    # Stores all the parametrizations to evaluate
-    parameterizations = [FCNNParameterization(path_model_folder + n) for n in models_name]
+    # ----------------------------------
+    #      Loading parameterizations
+    # ----------------------------------
+    # Stores all the parametrizations to test offline
+    parameterizations = []
+
+    for name, prefix in zip(models_name, prefix_parameterizations):
+        
+        # Path to model
+        full_path = path_model_folder + name
+        
+        # Loading
+        if prefix == "FCNN":
+            parameterizations.append(FCNNParameterization(full_path))
+            
+        if prefix == "KASKADE":
+            parameterizations.append(KASKADEParameterization(full_path))
         
     # Display information over terminal (3)
     section("Offline testing")
@@ -144,8 +147,8 @@ if __name__ == '__main__':
     # ----------------------------------
     #               Testing
     # ----------------------------------
-    # Retreive parmetrization types
-    param_types = get_param_type(models_name)
+    # Retreive parmetrization types (i.e. what they predict. Ex: Sq_tot, Sq_forcing, ...)
+    param_targets = get_param_type(models_name)
     
     # Stores the different R^2 and corr values measured
     r2_z0, r2_z1, corr_z0, corr_z1 = list(), list(), list(), list()
@@ -153,17 +156,17 @@ if __name__ == '__main__':
     # Display information over terminal (4)
     print("\nComputing (done)    =")
     
-    for param, param_name, param_target in zip(parameterizations, models_name, param_types):
+    for param, param_name, param_target, prefix in zip(parameterizations, models_name, param_targets, prefix_parameterizations):
         
         # Computing the predictions made by the parameterization
-        offline_pred = param.test_offline(data_ALR_offline)
+        offline_pred = param.test_offline(data_ALR_offline, prefix)
 
         # Plotting the results
         fig = plt.figure(figsize = (8, 6))
 
         # Adding title
         plt.suptitle(f"Offline performance")
-
+        
         # --- Correlation ---
         for z in [0, 1]:
             
@@ -175,6 +178,10 @@ if __name__ == '__main__':
                     corr_z0.append(imshow_offline(offline_pred.q_subgrid_forcing_spatial_correlation.isel(lev = z)))
                 if param_target == 1:
                     corr_z0.append(imshow_offline(offline_pred.q_forcing_total_spatial_correlation.isel(lev = z)))
+                if param_target == 2:
+                    corr_z0.append(imshow_offline(offline_pred.uq_subgrid_flux_spatial_correlation.isel(lev = z)))
+                if param_target == 3:
+                    corr_z0.append(imshow_offline(offline_pred.vq_subgrid_flux_spatial_correlation.isel(lev = z)))
             
             # --- Level 1 ---
             if z == 1:
@@ -182,6 +189,10 @@ if __name__ == '__main__':
                     corr_z1.append(imshow_offline(offline_pred.q_subgrid_forcing_spatial_correlation.isel(lev = z)))
                 if param_target == 1:
                     corr_z1.append(imshow_offline(offline_pred.q_forcing_total_spatial_correlation.isel(lev = z)))
+                if param_target == 2:
+                    corr_z1.append(imshow_offline(offline_pred.uq_subgrid_flux_spatial_correlation.isel(lev = z)))
+                if param_target == 3:
+                    corr_z1.append(imshow_offline(offline_pred.vq_subgrid_flux_spatial_correlation.isel(lev = z)))
 
             if z: colorbar("ρ")
 
@@ -196,6 +207,10 @@ if __name__ == '__main__':
                     r2_z0.append(imshow_offline(offline_pred.q_subgrid_forcing_spatial_correlation.isel(lev = z)))
                 if param_target == 1:
                     r2_z0.append(imshow_offline(offline_pred.q_forcing_total_spatial_correlation.isel(lev = z)))
+                if param_target == 2:
+                    r2_z0.append(imshow_offline(offline_pred.uq_subgrid_flux_spatial_correlation.isel(lev = z)))
+                if param_target == 3:
+                    r2_z0.append(imshow_offline(offline_pred.vq_subgrid_flux_spatial_correlation.isel(lev = z)))
             
             # --- Level 1 ---
             if z == 1:
@@ -203,7 +218,11 @@ if __name__ == '__main__':
                     r2_z1.append(imshow_offline(offline_pred.q_subgrid_forcing_spatial_skill.isel(lev = z)))
                 if param_target == 1:
                     r2_z1.append(imshow_offline(offline_pred.q_forcing_total_spatial_skill.isel(lev = z)))  
-                                 
+                if param_target == 2:
+                    r2_z1.append(imshow_offline(offline_pred.uq_subgrid_flux_spatial_correlation.isel(lev = z)))
+                if param_target == 3:
+                    r2_z1.append(imshow_offline(offline_pred.vq_subgrid_flux_spatial_correlation.isel(lev = z)))    
+                             
             if z: colorbar("$R^2$")
                 
         # Check if plot folder exists

@@ -13,6 +13,8 @@
 mkdir update
 cd update
 scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/notebooks notebooks
-scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/models models
+scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/models/base base
+scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/models/kaskade kaskade
 scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/src src
 scp -r alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/scripts scripts
+scp alan:/home/vmangeleer/TFE/pyqg_parameterization_benchmarks/environment.yml environment.yml

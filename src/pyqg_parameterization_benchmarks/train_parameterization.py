@@ -12,36 +12,16 @@
 # -----------------
 #
 # --------- Standard ---------
-import os
-import sys
-import json
-import glob
 import math
-import torch
-import random
-import fsspec
-import matplotlib
-import numpy             as np
-import xarray            as xr
-import matplotlib.pyplot as plt
-from argparse import ArgumentParser
-from scipy.stats import gaussian_kde
-from torch.utils.tensorboard import SummaryWriter
-
-# --------- PYQG ---------
-import pyqg
-import pyqg.diagnostic_tools
-from   pyqg.diagnostic_tools import calc_ispec         as _calc_ispec
-import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
-
-calc_ispec = lambda *args, **kwargs: _calc_ispec(*args, averaging = False, truncate =False, **kwargs)
+import argparse
+from   torch.utils.tensorboard import SummaryWriter
 
 # --------- PYQG Benchmark ---------
-from pyqg_parameterization_benchmarks.utils           import *
-from pyqg_parameterization_benchmarks.utils_TFE       import *
-from pyqg_parameterization_benchmarks.plots_TFE       import *
-from pyqg_parameterization_benchmarks.online_metrics  import diagnostic_differences
-from pyqg_parameterization_benchmarks.neural_networks import FullyCNN, FCNNParameterization
+from pyqg_parameterization_benchmarks.utils                  import *
+from pyqg_parameterization_benchmarks.utils_TFE              import *
+from pyqg_parameterization_benchmarks.plots_TFE              import *
+from pyqg_parameterization_benchmarks.neural_networks        import FullyCNN, FCNNParameterization
+from pyqg_parameterization_benchmarks.kaskade                import Kaskade,  KASKADEParameterization
 
 # -----------------------------------------------------
 #                         Main
@@ -55,7 +35,8 @@ if __name__ == '__main__':
     usage = """
     USAGE:      python train_parameterization.py --folder_training    <X>      
                                                  --folder_validation  <X> 
-                                                 --save_directory     <X>                   
+                                                 --param_name         <X>
+                                                 --param_type         <X>
                                                  --inputs             <X>
                                                  --targets            <X>         
                                                  --num_epochs         <X>         
@@ -65,51 +46,58 @@ if __name__ == '__main__':
                                                  --sim_type           <X>
     """
     # Initialization of the parser
-    parser = ArgumentParser(usage)
+    parser = argparse.ArgumentParser(usage)
 
     # Definition of the possible stuff to be parsed
     parser.add_argument(
         '--folder_training',
-        help  = 'Choose the folder used to load data as training data',
+        help  = 'Folder(s) used to load data as training data',
         nargs = '+')
 
     parser.add_argument(
         '--folder_validation',
-        help  = 'Choose the folder used to load data as training data',
+        help  = 'Folder(s) used to load data as validation data',
         nargs = '+')
 
     parser.add_argument(
-        '--save_directory',
-        help = 'Choose the folder used to load data as training data',
+        '--param_name',
+        help = 'Name of the folder containing the parameterization',
         type = str)
 
     parser.add_argument(
+        '--param_type',
+        help = 'Type of parameterization used to learn closure',
+        type = str,
+        choices = ["FCNN", "KASKADE"],
+        default = "FCNN")
+
+    parser.add_argument(
         '--inputs',
-        help  = 'Choose the type of inputs given to the parameterization for training',
+        help  = 'Type of inputs given to the parameterization for training',
         nargs = '+')
     
     parser.add_argument(
         '--targets',
-        help = 'Choose the parameterization ouptut',
+        help = 'Type of output predicted by the parameterization',
         type = str,
-        choices = ['q_forcing_total', 'q_subgrid_forcing', 'u_subgrid_forcing', 'v_subgrid_forcing'])
+        choices = ['q_forcing_total', 'q_subgrid_forcing', 'u_subgrid_forcing', 'v_subgrid_forcing', 'uq_subgrid_flux', 'vq_subgrid_flux'])
 
     parser.add_argument(
         '--num_epochs',
-        help = 'Choose the number of epochs made by the paremeterization while training',
+        help = 'Number of epochs for training',
         type = int)
     
     parser.add_argument(
         '--zero_mean',
-        help = 'Choose the type of pre-processing made on the datasets',
+        help = 'Type of pre-processing made on the datasets (training and validation)',
         type = str,
         default = True)
 
     parser.add_argument(
         '--padding',
-        help = 'Choose the type of padding used by the parameterization',
+        help = 'Type of padding used by the parameterization',
         type = str,
-        choices = ['circular'],
+        choices = ['circular', 'same', 'None'],
         default = 'circular')
 
     parser.add_argument(
@@ -119,9 +107,8 @@ if __name__ == '__main__':
     
     parser.add_argument(
         '--sim_type',
-        help = 'Type of fluid simulation studied (used to order tensorboard folders)',
-        type = str,
-        default = "eddies")
+        help = 'Type of fluid simulation studied (used to order tensorboard folders more easily)',
+        type = str)
 
     # Retrieving the values given by the user
     args = parser.parse_args()
@@ -179,24 +166,48 @@ if __name__ == '__main__':
         input_str += "_" + i
     
     # Creation of a more complete model name
-    curr_model_name = f"{args.save_directory}{input_str}_to_{args.targets}_{str(1000 * len(args.folder_training))}_{args.num_epochs}"
+    curr_model_name = f"{args.param_name}{input_str}_to_{args.targets}_{str(1000 * len(args.folder_training))}_{args.num_epochs}"
     
     # Determine the complete path of the result folder
     model_name, model_path = get_model_path(curr_model_name)
     
+    print(model_name, model_path)
+    
     # Initialization of tensorboard
-    tsb = SummaryWriter(f"../../runs/{args.sim_type}/{model_name}")
+    tsb = SummaryWriter(f"../../runs/{args.param_type}/{args.sim_type}/{model_name}")
 
-    # Training the parameterization
-    FCNN_trained = FCNNParameterization.train_on(dataset     = data_ALR_train, 
-                                                 dataset_val = data_ALR_valid,
-                                                 directory   = model_path,
-                                                 inputs      = args.inputs,
-                                                 targets     = [args.targets],
-                                                 num_epochs  = args.num_epochs, 
-                                                 zero_mean   = args.zero_mean, 
-                                                 padding     = args.padding,
-                                                 tensorboard = tsb)
+    # -----------------------------------------------------
+    # -------- Fully convolutionnal neural network --------
+    # -----------------------------------------------------
+    if args.param_type == "FCNN":
+    
+        FCNN_trained = FCNNParameterization.train_on(dataset            = data_ALR_train, 
+                                                     dataset_validation = data_ALR_valid,
+                                                     directory          = model_path,
+                                                     inputs             = args.inputs,
+                                                     targets            = [args.targets],
+                                                     num_epochs         = args.num_epochs, 
+                                                     zero_mean          = args.zero_mean, 
+                                                     padding            = args.padding,
+                                                     tensorboard        = tsb)
+        
+    # -----------------------------------------------------
+    # -------------- Kaskade neural network ---------------
+    # -----------------------------------------------------
+    if args.param_type == "KASKADE":
+    
+        KASKADE_trained = KASKADEParameterization.train_on(dataset               = data_ALR_train,  
+                                                           dataset_validation    = data_ALR_valid,
+                                                           directory             = model_path,
+                                                           inputs                = args.inputs,
+                                                           targets               = [args.targets],
+                                                           num_epochs            = args.num_epochs, 
+                                                           zero_mean             = args.zero_mean, 
+                                                           padding               = args.padding,
+                                                           tensorboard           = tsb)
+        
+    # Closing tensorboard
+    tsb.close()
     
     # Display information over terminal (2)
     print("\nDone\n")

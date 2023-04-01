@@ -19,35 +19,21 @@
 #
 # --------- Standard ---------
 import os
-import sys
-import json
-import glob
-import math
-import torch
-import random
-import fsspec
-import matplotlib
 import numpy             as np
 import pandas            as pd
 import xarray            as xr
 import seaborn           as sns
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 
 # --------- PYQG ---------
 import pyqg
-import pyqg.diagnostic_tools
 from   pyqg.diagnostic_tools import calc_ispec         as _calc_ispec
-import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
 
 calc_ispec = lambda *args, **kwargs: _calc_ispec(*args, averaging = False, truncate =False, **kwargs)
 
 # --------- PYQG Benchmark ---------
 from pyqg_parameterization_benchmarks.utils           import *
 from pyqg_parameterization_benchmarks.utils_TFE       import *
-from pyqg_parameterization_benchmarks.plots_TFE       import *
-from pyqg_parameterization_benchmarks.online_metrics  import diagnostic_differences
-from pyqg_parameterization_benchmarks.neural_networks import FullyCNN, FCNNParameterization
 
 # ----------------------------------------------------------------------------------------------------------
 #
@@ -87,7 +73,7 @@ def section(title = "UNKNOWN"):
     print(boundary)
     print(f" {title} ")
     print(boundary)
-
+    
 def show_sim_parameters(parameters):
     """
     Documentation
@@ -118,7 +104,8 @@ def show_param_parameters(parameters):
     print("\nInputs            = ")
     for f in parameters.inputs:
         print("                      - " + f)
-    print("\nSave directory    = " + parameters.save_directory)
+    print("\nParam. type       = " + parameters.param_type)
+    print("Param. name       = " + parameters.param_name)
     print("Targets           = " + parameters.targets)
     print("Number of epochs  = " + str(parameters.num_epochs))
     print("Zero mean         = " + str(parameters.zero_mean))
@@ -139,6 +126,30 @@ def show_models_offline(root, datasets, models):
         print("                      - " + m)
     print("\nModel folder (root) = " + root)
 
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                                    Training
+#
+# ----------------------------------------------------------------------------------------------------------
+# Used to display a simple progress bar while training for 1 epoch
+def progressBar(loss_training, loss_validation, estimated_time_epoch, nb_epoch_left, percent, width = 40):
+
+    # Setting up the useful information
+    left            = width * percent // 100
+    right           = width - left
+    tags            = "#" * int(left)
+    spaces          = " " * int(right)
+    percents        = f"{percent:.2f} %"
+    loss_training   = f"{loss_training * 1:.3f}"
+    loss_validation = f"{loss_validation * 1:.3f}"
+
+    # Computing timings
+    estimated_time_total = f"{nb_epoch_left * estimated_time_epoch:.2f} s"
+
+    # Displaying a really cool progress bar !
+    print("\r[", tags, spaces, "] - ", percents, " | Loss (Training) = ", loss_training, " | Loss (Validation) = ", loss_validation,
+          " | Total time left : ", estimated_time_total, " | ", sep = "", end = "", flush = True)
+    
 # ----------------------------------------------------------------------------------------------------------
 #
 #                                                  Offline testing
@@ -177,8 +188,14 @@ def beautify_model_names(model_names):
         
         # Base
         if "BASE" in n:
-            beauty_model_names.append("Base")
-            break
+            beauty_model_names.append("BASE_q → $S_{q_{total}, 5000}$")
+            continue
+            
+        # Parameterization name
+        if "FCNN"   in n:
+            beauty += "FCNN_"
+        if "KASKADE" in n:
+            beauty += "KASKADE_"
             
         # Input beautification
         if 'q_to' in n:
@@ -191,19 +208,41 @@ def beautify_model_names(model_names):
             beauty += "(q, u, v) → "    
     
         # Training information beautification
-        nb_epoch = ""
+        nb_samples = ""
+        if "500" in n:
+            nb_samples = ",500"
+        if "1000" in n:
+            nb_samples = ",1000"
+        if "2000" in n:
+            nb_samples = ",2000"
+        if "3000" in n:
+            nb_samples = ",3000"
+        if "4000" in n:
+            nb_samples = ",4000"
         if "5000" in n:
-            nb_epoch = ",5000"
+            nb_samples = ",5000"
+        if "6000" in n:
+            nb_samples = ",5000"
+        if "7000" in n:
+            nb_samples = ",5000"
+        if "8000" in n:
+            nb_samples = ",5000"
+        if "9000" in n:
+            nb_samples = ",5000"
         if "10000" in n:
-            nb_epoch = ",10000"
+            nb_samples = ",10000"
         if "20000" in n:
-            nb_epoch = ",20000"  
+            nb_samples = ",20000"  
             
         # Output beautification
         if "q_subgrid_forcing" in n:
-            beauty += "$S_{q" + nb_epoch + "}$"    
+            beauty += "$S_{q" + nb_samples + "}$"    
         if "q_forcing_total"   in n:
-            beauty += "$S_{q_{total}" + nb_epoch + "}$"
+            beauty += "$S_{q_{total}" + nb_samples + "}$"
+        if "uq_subgrid_flux"   in n:
+            beauty += "$\Phi_{(u,q)" + nb_samples + "}$"
+        if "vq_subgrid_flux"   in n:
+            beauty += "$\Phi_{(v,q)" + nb_samples + "}$"
             
         beauty_model_names.append(beauty)
             

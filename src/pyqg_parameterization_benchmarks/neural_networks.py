@@ -7,44 +7,39 @@
 #------------------------------------------------------------------------------
 # @ Victor Mangeleer
 #
-# -------
-# Credits
-# -------
-# For the source code, all the credit goes to:
+# -----------------
+#     Librairies
+# -----------------
 #
-#       A. Ross, Z. Li, P. Perezhogin, C. Fernandez-Granda & L. Zanna
-#
-# with the code originally coming from their paper:
-#
-#       https://www.essoar.org/pdfjs/10.1002/essoar.10511742.1
-#
-
+# --------- Standard ---------
 import os
 import glob
 import time
 import pyqg
-import pickle
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import numpy as np
-import xarray as xr
+import pickle
+import numpy          as np
+import xarray         as xr
+import torch.nn       as nn
+import torch.optim    as optim
+from   torch.autograd import grad, Variable
 
-from collections                              import OrderedDict
-from torch.autograd                           import grad, Variable
-from pyqg_parameterization_benchmarks.utils   import FeatureExtractor, Parameterization
+# --------- PYQG Benchmark ---------
+from pyqg_parameterization_benchmarks.utils_TFE  import *
+from pyqg_parameterization_benchmarks.plots_TFE  import *
+from pyqg_parameterization_benchmarks.utils      import FeatureExtractor, Parameterization
 
-#----------------------------------------------------------------------------------------
-#                 Convolutional neural network - Architecture definition
-#----------------------------------------------------------------------------------------
-# If you want to modify the core of the FCNN, i.e. it's structure, then it's here !
+# ----------------------------------------------------------------------------------------------------------
+#
+#
+#                            Parameterization - Fully convolutionnal Neural Network
+#
+#
+# ----------------------------------------------------------------------------------------------------------
 class FullyCNN(nn.Sequential):
-    """
-    Pytorch class defining our CNN architecture, plus some helpers for  dealing with constraints and scaling.
-    """
+
     def __init__(self, inputs, targets, padding = 'circular', zero_mean = True):
 
-        # Defining the padding type
         if padding is None:
             padding_5 = 0
             padding_3 = 0
@@ -52,10 +47,10 @@ class FullyCNN(nn.Sequential):
             padding_5 = 2
             padding_3 = 1
         else:
-            raise ValueError('Unknow value for padding parameter.')
+            raise ValueError('FullyCNN - Unknow value for padding parameter, i.e. should be None or circular')
 
         # Dimension of input and output data
-        n_in = len(inputs)
+        n_in  = len(inputs)
         n_out = len(targets)
 
         # Storing more information about the data and parameters
@@ -68,9 +63,9 @@ class FullyCNN(nn.Sequential):
         if padding == 'circular':
             kw['padding_mode'] = 'circular'
 
-    #-----------------------------------------------------------------------------------
-    #                    MODIFY - FULLY CONVOLUTIONAL NEURAL NETWORK
-    #-----------------------------------------------------------------------------------
+        #-----------------------------------------------------------------------------------
+        #                                   Architecture
+        #-----------------------------------------------------------------------------------
         block1 = self._make_subblock(nn.Conv2d(n_in, 128, 5, padding = padding_5, **kw))
         block2 = self._make_subblock(nn.Conv2d(128,   64, 5, padding = padding_5, **kw))
         block3 = self._make_subblock(nn.Conv2d(64,    32, 3, padding = padding_3, **kw))
@@ -87,17 +82,23 @@ class FullyCNN(nn.Sequential):
         return [conv, nn.ReLU(), nn.BatchNorm2d(conv.out_channels)]
 
     #-----------------------------------------------------------------------------------
-    #                    MODIFY - FULLY CONVOLUTIONAL NEURAL NETWORK
+    #                                     Forward
     #-----------------------------------------------------------------------------------
-    # Compute a forward pass of the FCNN using the input X
     def forward(self, x):
-        r = super().forward(x)
+        
+        # Final prediction
+        pred = super().forward(x)
+        
+        # Normalization of prediction
         if self.is_zero_mean:
-            return r - r.mean(dim = (1,2,3), keepdim = True)
+            return pred - pred.mean(dim = (1,2,3), keepdim = True)
         else:
-            return r
+            return pred
 
-    # Used to extract and write (human-readable) the features (I think)
+    # ------------------------------------------------------------------------------------------------------
+    #                                            Extract information
+    # ------------------------------------------------------------------------------------------------------
+    # Used to extract and write (human-readable) the features
     def extract_vars(self, m, features, dtype=np.float32):
         ex  = FeatureExtractor(m)
         arr = np.stack([np.take(ex(feat), z, axis=-3) for feat, z in features], axis=-3)
@@ -141,7 +142,9 @@ class FullyCNN(nn.Sequential):
         else:
             return grads
 
-    # Used to compute a prediction (for testing not training since grad not saved)
+    # ------------------------------------------------------------------------------------------------------
+    #                             Predictions (for testing not training since grad not saved)
+    # ------------------------------------------------------------------------------------------------------
     def predict(self, inputs, device = None):
 
         # Checking for a GPU !
@@ -154,14 +157,21 @@ class FullyCNN(nn.Sequential):
 
         # Compute predictions
         preds = []
+        
+        # Retreive inputs
         for x, in minibatch(X, shuffle = False):
+            
+            # Sending to GPU
             x = x.to(device)
+            
+            # Computing predictions
             with torch.no_grad():
                 preds.append(self.forward(x).cpu().numpy())
 
-        # Loading the outputs and normalizing them !
+        # Concatenation and normalization of outputs
         preds = self.output_scale.inverse_transform(np.vstack(preds))
 
+        # Shaping predictions
         s     = list(inputs.q.shape)
         preds = np.stack([preds[:,i].reshape(s[:-3] + s[-2:]) for i in range(len(self.targets))], axis = -3)
 
@@ -170,30 +180,41 @@ class FullyCNN(nn.Sequential):
         except:
             return preds
 
+    # ------------------------------------------------------------------------------------------------------
+    #                             Fitting (Prepares inputs/outputs and train the model)
+    # ------------------------------------------------------------------------------------------------------
+    # Used to start training a model
+    def fit_FCNN(self, inputs, targets, inputs_validation, targets_validation, 
+                 level, tensorboard, rescale = False, **kw):
+
+        # -------------- Scaler creation --------------
+        if rescale or not hasattr(self, 'input_scale') or self.input_scale is None:
+            self.input_scale = ChannelwiseScaler(inputs)
+            inputs_val_scale = ChannelwiseScaler(inputs_validation)
+
+        if rescale or not hasattr(self, 'output_scale') or self.output_scale is None:
+            self.output_scale = ChannelwiseScaler(targets,            zero_mean = self.is_zero_mean)
+            outputs_val_scale = ChannelwiseScaler(targets_validation, zero_mean = self.is_zero_mean)
+
+        # -------------- Scaling --------------
+        scaled_inputs             = self.input_scale.transform(inputs)
+        scaled_targets            = self.output_scale.transform(targets)
+        scaled_inputs_validation  = inputs_val_scale.transform(inputs_validation)
+        scaled_targets_validation = outputs_val_scale.transform(targets_validation)
+        
+        # ---------------- Training ----------------
+        train_FCNN(self, scaled_inputs, scaled_targets, scaled_inputs_validation, scaled_targets_validation, \
+                   level, tensorboard = tensorboard, **kw)
+
+    # ------------------------------------------------------------------------------------------------------
+    #                                          Other class functions
+    # ------------------------------------------------------------------------------------------------------
     # Defining own version of the mean squarred error
     def mse(self, inputs, targets, **kw):
         y_true = targets.reshape(-1, np.prod(targets.shape[1:]))
         y_pred = self.predict(inputs).reshape(-1, np.prod(targets.shape[1:]))
         return np.mean(np.sum((y_pred - y_true)**2, axis=1))
-
-    # Used to start training a model
-    def fit(self, inputs, targets, inputs_val, targets_val, tensorboard, rescale = False, **kw):
-
-        # Creation of a scaler for the input (mu = 0 and std = 1) if:
-        if rescale or not hasattr(self, 'input_scale') or self.input_scale is None:
-            self.input_scale = ChannelwiseScaler(inputs)
-            inputs_val_scale = ChannelwiseScaler(inputs_val)
-
-        # Creation of a scaler for the output (mu = 0 and std = 1) if:
-        if rescale or not hasattr(self, 'output_scale') or self.output_scale is None:
-            self.output_scale = ChannelwiseScaler(targets, zero_mean = self.is_zero_mean)
-            outputs_val_scale = ChannelwiseScaler(targets_val, zero_mean = self.is_zero_mean)
-
-        # Going further into the training
-        train(self, self.input_scale.transform(inputs), self.output_scale.transform(targets), \
-                inputs_val_scale.transform(inputs_val), outputs_val_scale.transform(targets_val), \
-                tensorboard = tensorboard, **kw)
-
+    
     # Save the model !
     def save(self, path):
 
@@ -212,20 +233,15 @@ class FullyCNN(nn.Sequential):
         if hasattr(self, 'input_scale') and self.input_scale is not None:
             with open(f"{path}/input_scale.pkl", 'wb') as f:
                 pickle.dump(self.input_scale, f)
-
         if hasattr(self, 'output_scale')  and self.output_scale is not None:
             with open(f"{path}/output_scale.pkl", 'wb') as f:
                 pickle.dump(self.output_scale, f)
-
         with open(f"{path}/inputs.pkl", 'wb') as f:
             pickle.dump(self.inputs, f)
-
         with open(f"{path}/targets.pkl", 'wb') as f:
             pickle.dump(self.targets, f)
-
         if self.is_zero_mean:
             open(f"{path}/zero_mean", 'a').close()
-
         if hasattr(self, 'padding'):
             with open(f"{path}/padding", 'w') as f:
                 f.write(self.padding)
@@ -269,128 +285,46 @@ class FullyCNN(nn.Sequential):
 
         return model
 
-#----------------------------------------------------------------------------------------
-#                                 Statistics functions
-#----------------------------------------------------------------------------------------
-class BasicScaler(object):
-    """
-    Simple class to perform normalization and denormalization
-    """
-    def __init__(self, mu = 0, sd = 1):
-        self.mu = mu
-        self.sd = sd
-
-    def transform(self, x):
-        return (x - self.mu) / self.sd
-
-    def inverse_transform(self, z):
-        # One needs to compute first mu and sd -> ChannelwiseScaler
-        return z * self.sd + self.mu
-
-class ChannelwiseScaler(BasicScaler):
-    """
-    Simple class to compute mean and standard deviation of each channel
-    """
-    def __init__(self, x, zero_mean = False):
-        assert len(x.shape) == 4
-
-        # Computation of the mean
-        if zero_mean:
-            mu = 0
-        else:
-            mu = np.array([x[:,i].mean() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
-
-        # Computation of the standard deviation
-        sd = np.array([x[:,i].std() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
-
-        # Initialization of a scaler with correct mean and standard deviation
-        super().__init__(mu, sd)
-
-#----------------------------------------------------------------------------------------
-#                 Convolutional neural network - Information over terminal
-#----------------------------------------------------------------------------------------
-# Used to print a basic section title in terminal
-def section(title = "UNKNOWN"):
-
-    # Number of letters to determine section size
-    title_size = len(title)
-
-    # Section title boundaries
-    boundary  = "-"
-    for i in range(title_size + 1):
-        boundary += "-"
-
-    # Printing section
-    print(boundary)
-    print(f" {title} ")
-    print(boundary)
-
-# Used to display a simple progress bar while training for 1 epoch
-def progressBar(loss_training, loss_validation, estimated_time_epoch, nb_epoch_left, percent, width = 40):
-
-    # Setting up the useful information
-    left            = width * percent // 100
-    right           = width - left
-    tags            = "#" * int(left)
-    spaces          = " " * int(right)
-    percents        = f"{percent:.2f} %"
-    loss_training   = f"{loss_training * 1:.3f}"
-    loss_validation = f"{loss_validation * 1:.3f}"
-
-    # Computing timings
-    estimated_time_total = f"{nb_epoch_left * estimated_time_epoch:.2f} s"
-
-    # Displaying a really cool progress bar !
-    print("\r[", tags, spaces, "] - ", percents, " | Loss (Training) = ", loss_training, " | Loss (Validation) = ", loss_validation,
-          " | Total time left : ", estimated_time_total, " | ", sep = "", end = "", flush = True)
-
-#----------------------------------------------------------------------------------------
-#             MODIFY - Convolutional neural network - Training functions
-#----------------------------------------------------------------------------------------
-def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
-
-    # Since set removes duplicate, this assert make sure that inputs and outputs have same dimensions !
-    assert len(set([len(a) for a in arrays])) == 1
-
-    # Index vector
-    order = np.arange(len(arrays[0]))
-    if shuffle:
-        np.random.shuffle(order)
-
-    # Step size (arrondis vers le bas)
-    steps = int(np.ceil(len(arrays[0]) / batch_size))
-
-    # Choose data type to store the batch
-    xform = torch.as_tensor if as_tensor else lambda x: x
-
-    # Creation of all the mini batches !
-    for step in range(steps):
-        idx = order[step * batch_size : (step + 1) * batch_size]
-
-        # Yield is the same as return except that it return a generator ! In other words,
-        # it is an iterator that you can only go through once since values are discarded !
-        # This really really really smart !
-        yield tuple(xform(array[idx]) for array in arrays)
-
-# Used to make the training a model, it could be nice to upgrade it !
-def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs = 50, batch_size = 64, learning_rate = 0.001, device = None):
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                         Parameterization - FCNN Training
+#
+# ----------------------------------------------------------------------------------------------------------
+def train_FCNN(model, inputs, targets, inputs_validation, targets_validation, level, tensorboard, 
+               num_epochs = 50, batch_size = 64, learning_rate = 0.001, device = None):
 
     # Looking for a GPU !
     if device is None:
         device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        net.to(device)
+        model.to(device)
 
-    # Training parameters
-    optimizer = optim.Adam(net.parameters(), lr = learning_rate)
-    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(num_epochs/2), int(num_epochs * 3/4), int(num_epochs * 7/8)], gamma=0.1)
+    # Training properties
+    mls_list  = [int(num_epochs/2), int(num_epochs * 3/4), int(num_epochs * 7/8)]
+    optimizer = optim.Adam(model.parameters(), lr = learning_rate)
+    scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones = mls_list, gamma = 0.1)
     criterion = nn.MSELoss()
 
     # Used to compute training progression bar (1)
     size_train = len(inputs)
     epoch_time = 0
     
-    # Start training
+    # Custom layout for tensorboard vizualization
+    layout = {
+        f"Level : {str(level)}": {
+            "Training"    : ["Multiline", ["loss/train"]],
+            "Validation"  : ["Multiline", ["loss/validation"]],
+        },
+    }
+    
+    # Adding layout
+    tensorboard.add_custom_scalars(layout)
+
+    # ------------------------------------------------------------------------------------------------------
+    #                                                 Fitting
+    # ------------------------------------------------------------------------------------------------------
     for epoch in range(num_epochs):
+        
+        # Initialization
         epoch_loss      = 0.0
         epoch_loss_val  = 0.0
         epoch_steps     = 0
@@ -405,17 +339,20 @@ def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs
         # Used to approximate time left for current epoch and in total
         start      = time.time()
 
-        # --------------------
-        #       Training
-        # --------------------
-        # Retreiving a batch of data
+        # --------------------------------------------------------------------------------------------------
+        #                                             Training
+        # --------------------------------------------------------------------------------------------------
         for x, y in minibatch(inputs, targets, batch_size = batch_size):
 
+            # Vizualizing model on tensorboard
+            if epoch == 0 and index == batch_size:
+                tensorboard.add_graph(model, input_to_model = x.to(device), verbose = False)
+            
             # Reseting gradients
             optimizer.zero_grad()
 
             # Computing prediction and storing target
-            yhat  = net.forward(x.to(device))
+            yhat  = model.forward(x.to(device))
             ytrue = y.to(device)
 
             # Computing loss
@@ -436,18 +373,18 @@ def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs
             index += batch_size
             
         # Updating tensorboard (1)
-        tensorboard.add_scalar("Training loss", epoch_loss/epoch_steps, global_step = epoch)
+        tensorboard.add_scalar("loss/train", epoch_loss/epoch_steps, global_step = epoch)
             
-        # --------------------
-        #      Validation
-        # --------------------        
+        # --------------------------------------------------------------------------------------------------
+        #                                             Validation
+        # --------------------------------------------------------------------------------------------------     
         with torch.no_grad():  
             
             # Retreiving a batch of data
-            for x, y in minibatch(inputs_val, targets_val, batch_size = batch_size):
+            for x, y in minibatch(inputs_validation, targets_validation, batch_size = batch_size):
 
                 # Computing prediction and storing target
-                yhat  = net.forward(x.to(device))
+                yhat  = model.forward(x.to(device))
                 ytrue = y.to(device)
 
                 # Computing loss
@@ -461,7 +398,7 @@ def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs
                 progressBar(epoch_loss/epoch_steps, epoch_loss_val/epoch_steps_val, epoch_time, nb_epoch_left, percentage)
                 
             # Updating tensorboard (2)
-            tensorboard.add_scalar("Validation loss", epoch_loss_val/epoch_steps_val, global_step = epoch)
+            tensorboard.add_scalar("loss/validation", epoch_loss_val/epoch_steps_val, global_step = epoch)
                 
         # Updating timing
         epoch_time    = time.time() - start
@@ -472,71 +409,81 @@ def train(net, inputs, targets, inputs_val, targets_val, tensorboard, num_epochs
         # Updating the scheduler to update learning rate !
         scheduler.step()
 
-#----------------------------------------------------------------------------------------
-#                      Convolutional neural network - Handler
-#----------------------------------------------------------------------------------------
-# Contains all the functions one needs to train the NN !
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                         Parameterization - FCNN handler
+#
+# ----------------------------------------------------------------------------------------------------------
 class FCNNParameterization(Parameterization):
 
-    # Associates a/some model/s to the handler, ATTENTION model should be an instance of FullyCNN
     def __init__(self, directory, models = None, **kw):
         self.directory = directory
-        self.models = models if models is not None else [
-            FullyCNN.load(f, **kw)
-            for f in sorted(glob.glob(os.path.join(directory, "models/*")))
-        ]
+        self.models    = models if models is not None else [
+                         FullyCNN.load(f, **kw)
+                         for f in sorted(glob.glob(os.path.join(directory, "models/*")))]
 
-    # Retreives all the targets associated to each model
     @property
     def targets(self):
+        """
+        Retreive all the targets associated to each model
+        """
         targets = set()
         for model in self.models:
             for target, z in model.targets:
                 targets.add(target)
         return list(sorted(list(targets)))
 
-    # Compute prediction for all models
+    # --------------------------------------------------------------------------------------------------
+    #                                         Predict (Handler)
+    # --------------------------------------------------------------------------------------------------  
     def predict(self, m):
+        
+        # Stores predictions
         preds = {}
 
+        # Prediction of each model (one per layer)
         for model in self.models:
+            
+            # Compute predictions
             pred = model.predict(m)
+            
+            # Security
             assert len(pred.shape) == len(m.q.shape)
 
-            # ------ DON'T WORRY ------
-            # Handle the arduous task of getting the indices right for many possible input shapes
-            # (e.g. pyqg.Model or xr.Dataset snapshot stack)
+            # Handle the arduous task of getting the indices right for many possible input shapes (e.g. pyqg.Model or xr.Dataset snapshot stack)
             for channel in range(pred.shape[-3]):
                 target, z = model.targets[channel]
                 if target not in preds:
                     preds[target] = np.zeros_like(m.q)
-                out_indices     = [slice(None) for _ in m.q.shape]
-                out_indices[-3] = slice(z,z+1)
-                in_indices      = [slice(None) for _ in m.q.shape]
-                in_indices[-3]  = slice(channel,channel+1)
+                out_indices       = [slice(None) for _ in m.q.shape]
+                out_indices[-3]   = slice(z,z+1)
+                in_indices        = [slice(None) for _ in m.q.shape]
+                in_indices[-3]    = slice(channel,channel+1)
                 preds[target][tuple(out_indices)] = pred[tuple(in_indices)]
-            # ------ DON'T WORRY ------
-
         return preds
 
+    # --------------------------------------------------------------------------------------------------
+    #                                         Training (Handler)
+    # --------------------------------------------------------------------------------------------------   
     @classmethod
-    def train_on(cls, dataset, dataset_val, directory, tensorboard, inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'],
-                      num_epochs = 50, zero_mean = True, padding = 'circular', **kw):
+    def train_on(cls, dataset, dataset_validation, directory, tensorboard, 
+                 inputs = ['q', 'u', 'v'], targets = ['q_subgrid_forcing'], 
+                 num_epochs = 50, zero_mean = True, padding = 'circular', **kw):
 
         # Retreives the numbzr of layers of the simulation
         layers = range(len(dataset.lev))
 
         models = [
             FullyCNN(
-                [(feat, zi) for feat in inputs for zi in layers], # For each layer, one gives as input 'q', 'u', 'v'
-                [(feat, z) for feat in targets],                  # For each layer, one computes
+                [(feat, zi) for feat in inputs for zi in layers], 
+                [(feat, z) for feat in targets],                  
                 zero_mean = zero_mean,
                 padding = padding
             ) for z in layers
         ]
 
         # Displaying information over terminal (1)
-        section("Fully Convolutional neural network - Training")
+        section("Parameterization - Training")
 
         # Stores the trained models
         trained = []
@@ -549,7 +496,7 @@ class FCNNParameterization(Parameterization):
 
             # Displaying information over terminal (2)
             section(f"Model - z = {z}")
-
+        
             # Already exists (What is model 2)
             if os.path.exists(model_dir):
                 trained.append(FullyCNN.load(model_dir))
@@ -562,11 +509,11 @@ class FCNNParameterization(Parameterization):
                 Y = model.extract_targets(dataset)
                 
                 # Retreives the input and outputs of validation set
-                X_val = model.extract_inputs(dataset_val)
-                Y_val = model.extract_targets(dataset_val)
+                X_val = model.extract_inputs(dataset_validation)
+                Y_val = model.extract_targets(dataset_validation)
 
                 # Training the model
-                model.fit(X, Y, X_val, Y_val, tensorboard, num_epochs = num_epochs, **kw)
+                model.fit_FCNN(X, Y, X_val, Y_val, z, tensorboard, num_epochs = num_epochs, **kw)
 
                 # Saving the model
                 model.save(os.path.join(directory, f"models/{z}"))

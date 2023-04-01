@@ -19,33 +19,22 @@
 #
 # --------- Standard ---------
 import os
-import sys
-import json
 import glob
 import math
 import torch
 import random
-import fsspec
-import matplotlib
 import numpy             as np
 import xarray            as xr
 import matplotlib.pyplot as plt
-from scipy.stats import gaussian_kde
 
 # --------- PYQG ---------
 import pyqg
-import pyqg.diagnostic_tools
-from   pyqg.diagnostic_tools import calc_ispec         as _calc_ispec
-import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
-
-calc_ispec = lambda *args, **kwargs: _calc_ispec(*args, averaging = False, truncate =False, **kwargs)
 
 # --------- PYQG Benchmark ---------
-from pyqg_parameterization_benchmarks.utils           import *
-from pyqg_parameterization_benchmarks.utils_TFE       import *
-from pyqg_parameterization_benchmarks.plots_TFE       import *
-from pyqg_parameterization_benchmarks.online_metrics  import diagnostic_differences
-from pyqg_parameterization_benchmarks.neural_networks import FullyCNN, FCNNParameterization
+import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
+from   pyqg_parameterization_benchmarks.utils          import *
+from   pyqg_parameterization_benchmarks.plots_TFE      import *
+
 
 # ----------------------------------------------------------------------------------------------------------
 #
@@ -88,10 +77,10 @@ def needed_memory(nb_samples, save_high_res = False):
     memory_HR  = 17291/2355
     memory_LR  = 2779/2355
     memory_ALR = memory_LR * 2.5
-
+    
     # Actual space needed for one sample
     space_sample = memory_HR + memory_LR + memory_ALR if save_high_res else memory_LR + memory_ALR
-
+    
     # Memory Space Needed
     space_needed = space_sample * nb_samples
 
@@ -135,7 +124,7 @@ def get_model_path(model_name):
     """
     Documentation
     -------------
-    Used to determine the path to the results' folder for the FCNN
+    Used to determine the path to the results' folder for the model
     """
     # Count number of already existing folders in the model folder
     nb_files = str(len(glob.glob("../../models/*")))
@@ -144,12 +133,10 @@ def get_model_path(model_name):
     current_directory = "../../models/" + model_name + "/"
     
     # Final path to the model (make sure there are no overwritte of existing model)
-    model_path = f"{current_directory}" if not os.path.exists(current_directory) else \
-                 f"{current_directory}" + f"__{nb_files}__/"
+    model_path = f"{current_directory}"
 
     # Final model name
-    model_name = model_name if not os.path.exists(current_directory) else \
-                 model_name + f"__{nb_files}__/"
+    model_name = model_name + f"_{str(nb_files)}"
     
     # Creation of a non-existing folder name
     return model_name, model_path
@@ -186,6 +173,36 @@ def config_for(model):
 
 # ----------------------------------------------------------------------------------------------------------
 #
+#                                                Parameterizations
+#
+# ----------------------------------------------------------------------------------------------------------
+def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
+
+    # Since set removes duplicate, this assert make sure that inputs and outputs have same dimensions !
+    assert len(set([len(a) for a in arrays])) == 1
+
+    # Index vector
+    order = np.arange(len(arrays[0]))
+    if shuffle:
+        np.random.shuffle(order)
+
+    # Step size (arrondis vers le bas)
+    steps = int(np.ceil(len(arrays[0]) / batch_size))
+
+    # Choose data type to store the batch
+    xform = torch.as_tensor if as_tensor else lambda x: x
+
+    # Creation of all the mini batches !
+    for step in range(steps):
+        idx = order[step * batch_size : (step + 1) * batch_size]
+
+        # Yield is the same as return except that it return a generator ! In other words,
+        # it is an iterator that you can only go through once since values are discarded !
+        # This really really really smart !
+        yield tuple(xform(array[idx]) for array in arrays)
+        
+# ----------------------------------------------------------------------------------------------------------
+#
 #                                                Offline testing
 #
 # ----------------------------------------------------------------------------------------------------------
@@ -194,8 +211,6 @@ def get_param_type(param_names):
     Documentation
     -------------
     Return a list containing the type of target predicted by the model where:
-    - 0 = q_subgrid_forcing
-    - 1 = q_forcing_total
     """
     # Stores the different target types
     types = list()
@@ -207,7 +222,11 @@ def get_param_type(param_names):
             types.append(0)
         if "q_forcing_total"   in p:
             types.append(1)
-
+        if "uq_subgrid_flux"   in p:
+            types.append(2)
+        if "vq_subgrid_flux"   in p:
+            types.append(3)
+            
     return types
 
 def imshow_offline(arr):
@@ -227,6 +246,44 @@ def imshow_offline(arr):
     
     return mean
                 
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                                    Statistics
+#
+# ----------------------------------------------------------------------------------------------------------
+class BasicScaler(object):
+    """
+    Simple class to perform normalization and denormalization
+    """
+    def __init__(self, mu = 0, sd = 1):
+        self.mu = mu
+        self.sd = sd
+
+    def transform(self, x):
+        return (x - self.mu) / self.sd
+
+    def inverse_transform(self, z):
+        return z * self.sd + self.mu
+
+class ChannelwiseScaler(BasicScaler):
+    """
+    Simple class to compute mean and standard deviation of each channel
+    """
+    def __init__(self, x, zero_mean = False):
+        assert len(x.shape) == 4
+
+        # Computation of the mean
+        if zero_mean:
+            mu = 0
+        else:
+            mu = np.array([x[:,i].mean() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
+
+        # Computation of the standard deviation
+        sd = np.array([x[:,i].std() for i in range(x.shape[1])])[np.newaxis , : , np.newaxis , np.newaxis]
+
+        # Initialization of a scaler with correct mean and standard deviation
+        super().__init__(mu, sd)
+        
 # ----------------------------------------------------------------------------------------------------------
 #
 #                                                    Datasets
@@ -283,7 +340,7 @@ def load_data(datasets_name, datasets_type = ["ALR"]):
         if "HR" in datasets_type:
             loaded_HR  = xr.load_dataset(curr_data + "dataset_HR.nc")
             data_HR    = loaded_HR if i == 0 else \
-                        xr.concat([data_HR, loaded_HR], dim = "time")
+                         xr.concat([data_HR, loaded_HR], dim = "time")
             loaded_HR.close()
 
         if "LR" in datasets_type:
@@ -296,7 +353,6 @@ def load_data(datasets_name, datasets_type = ["ALR"]):
             loaded_ALR = xr.load_dataset(curr_data + "dataset_ALR.nc")
             data_ALR   = loaded_ALR if i == 0 else \
                          xr.concat([data_ALR, loaded_ALR], dim = "time")
-            loaded_ALR.close()
 
     return data_HR, data_LR, data_ALR
     
