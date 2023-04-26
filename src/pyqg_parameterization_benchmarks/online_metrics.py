@@ -55,7 +55,7 @@ def diagnostic_differences(ds1, ds2, T = 10):
         u   ='ufull',
         v   ='vfull',
         KE  ='add(pow(ufull,2),pow(vfull,2))', # u^2 + v^2
-        Ens ='pow(curl(ufull,vfull),2)', # (u_y - v_x)^2
+        Ens ='pow(curl(ufull,vfull),2)',       # (u_y - v_x)^2
     )
     
     spectral_quantities = [
@@ -86,10 +86,18 @@ def diagnostic_differences(ds1, ds2, T = 10):
         # Initialize pyqg models so we can use pyqg's calc_ispec helper
         m1 = pyqg.QGModel(nx=spec1.data.shape[-2], log_level=0)
         m2 = pyqg.QGModel(nx=spec2.data.shape[-2], log_level=0)
+                
+        # Fixing dimensions problem
+        spec1_data = np.swapaxes(spec1.data, 0, 1)
+        spec1_data = np.swapaxes(spec1_data, 1, 2)
+        
+        # Fixing dimensions problem
+        spec2_data = np.swapaxes(spec2.data, 0, 1)
+        spec2_data = np.swapaxes(spec2_data, 1, 2)
         
         # Compute isotropic spectra
-        kr1, ispec1 = pyqg.diagnostic_tools.calc_ispec(m1, spec1.data)
-        kr2, ispec2 = pyqg.diagnostic_tools.calc_ispec(m2, spec2.data)
+        kr1, ispec1 = pyqg.diagnostic_tools.calc_ispec(m1, spec1_data)
+        kr2, ispec2 = pyqg.diagnostic_tools.calc_ispec(m2, spec2_data)
         
         # Take error over wavenumbers below 2/3 of both models' Nyquist freqs
         kmax = min(twothirds_nyquist(m1), twothirds_nyquist(m2))

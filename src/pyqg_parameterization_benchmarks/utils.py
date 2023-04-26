@@ -20,9 +20,12 @@
 # --------- Standard ---------
 import re
 import pyqg
+import math
 import operator
-import numpy    as np
-import xarray   as xr
+import numpy               as np
+import xarray              as xr
+import matplotlib.pyplot   as plt
+import matplotlib.gridspec as gridspec
 
 # ----------------------------------------------------------------------------------------------------------
 #
@@ -49,7 +52,7 @@ class Parameterization(pyqg.Parameterization):
         return 64
 
     @property
-    def parameterization_type(self):
+    def parameterization_type(self):        
         if any(q in self.targets[0] for q in ['q_forcing', 'q_subgrid']):
             return 'q_parameterization'
         else:
@@ -78,7 +81,7 @@ class Parameterization(pyqg.Parameterization):
     # ----------------------------------------------------------------------------------------------------------
     #                         Parameterization - Run Online (PYQG simulation + Parameterization)
     # ----------------------------------------------------------------------------------------------------------
-    def run_online(self, sampling_freq = 1000, **kw):
+    def run_online(self, sim_duration = 10, skipped_time = 3,  target_sample_size = 1000, **kw):
         """
         Documentation
         -------------
@@ -87,18 +90,45 @@ class Parameterization(pyqg.Parameterization):
         # Initialize a pyqg model with this parameterization
         params = dict(kw)
         
-        # -- Be careful, the parameterization is given here to PYQG ! --
+        # Adding simulation time
+        params["tmax"] = sim_duration * 24 * 60 * 60 * 365
+        
+        # Determine the sampling frequency needed to reach the target sample size
+        sampling_frequency = math.floor((365 * (sim_duration - skipped_time) * 24)/target_sample_size)
+
+        # Real number of samples created
+        nb_samples = math.floor((365 * (sim_duration - skipped_time) * 24)/sampling_frequency)
+    
+        # Displaying information over terminal
+        print("Sampling frequency = ", sampling_frequency)
+        print("Number of samples  = ", nb_samples)
+        
+        # Giving parameterization to PyQG model
         params[self.parameterization_type] = self
-        params['nx'] = self.nx
-        m = pyqg.QGModel(**params)
+        params['nx']                       = self.nx
+        
+        # Initialization of the model
+        model = pyqg.QGModel(twrite = 1000, **params)
 
-        # Run it, saving snapshots
-        snapshots = []
-        while m.t < m.tmax:
-            if m.tc % sampling_freq == 0:
-                snapshots.append(m.to_dataset().copy(deep=True))
-            m._step_forward()
+        # Skipped steps
+        skipped_steps = skipped_time * 365 * 24 * 60 * 60
+        
+        # Stores the data associated to the different steps
+        snapshots = list()
+        
+        #---------------------------------------
+        #         Running the simulation
+        #---------------------------------------
+        while model.t < model.tmax:
+            
+            # Sampling of data
+            if model.tc % sampling_frequency == 0 and skipped_steps < model.t:
+                snapshots.append(model.to_dataset().copy(deep=True))
+               
+            # Computing next step of simulation
+            model._step_forward()
 
+        # Concatenation of all the results into a big dataset
         ds = xr.concat(snapshots, dim='time')
         
         # Diagnostics get dropped by this procedure since they're only present for
@@ -117,7 +147,7 @@ class Parameterization(pyqg.Parameterization):
     # ----------------------------------------------------------------------------------------------------------
     #                                        Parameterization - Test Offline 
     # ----------------------------------------------------------------------------------------------------------
-    def test_offline(self, dataset, prefix):
+    def test_offline(self, dataset):
         """
         Documentation:
         --------------
@@ -127,13 +157,7 @@ class Parameterization(pyqg.Parameterization):
         test = dataset[self.targets]
         
         # ------ Computing predictions -----
-        pred = None
-        
-        if prefix == "FCNN":
-            pred = self.predict(dataset).items()
-            
-        if prefix == "KASKADE":
-            pred = self.predict(dataset).items()
+        pred = self.predict(dataset).items()
         
         # ------ Computing metrics -----
         for key, val in pred:
@@ -177,41 +201,6 @@ class Parameterization(pyqg.Parameterization):
             ) / len(self.targets)
 
         return test
-
-# ----------------------------------------------------------------------------------------------------------
-#
-#                                          Online Test (Energy budget comparaison)
-#
-# ----------------------------------------------------------------------------------------------------------
-def energy_budget_term(model, term):
-    val = model[term]
-    if 'paramspec_' + term in model:
-        val += model['paramspec_' + term]
-    return val.sum('l')
-
-def energy_budget_figure(models, skip=0):
-    import matplotlib.pyplot as plt
-    fig = plt.figure(figsize=(12,5))
-    vmax = 0
-    for i,term in enumerate(['KEflux','APEflux','APEgenspec','KEfrictionspec']):
-        plt.subplot(1,4,i+1,title=term)
-        plt.axhline(0,color='gray', ls='--')
-        
-        for model, label in models:
-            spec = energy_budget_term(model, term)
-            plt.semilogx(model.k[skip:], spec[skip:],
-                         label=label, lw=3, ls=('--' if '+' in label else '-'))
-            vmax = max(vmax, spec[skip:].max())
-        plt.grid(which='both',alpha=0.25)
-        if i == 0: plt.ylabel("Energy transfer $[m^2 s^{-3}]$")
-        else: plt.gca().set_yticklabels([])
-        if i == 3: plt.legend()
-        plt.xlabel("Zonal wavenumber $[m^{-1}]$")
-    for ax in fig.axes:
-        ax.set_ylim(-vmax, vmax)
-    plt.tight_layout()
-    return fig
-
 
 # ----------------------------------------------------------------------------------------------------------
 #

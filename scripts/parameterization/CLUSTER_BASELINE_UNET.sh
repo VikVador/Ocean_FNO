@@ -1,0 +1,12 @@
+sbatch BASELINE_UNET_param_1.sh
+sbatch BASELINE_UNET_param_2.sh
+sbatch BASELINE_UNET_param_3.sh
+sbatch BASELINE_UNET_param_4.sh
+sbatch BASELINE_UNET_param_5.sh
+sbatch BASELINE_UNET_param_6.sh
+sbatch BASELINE_UNET_param_7.sh
+sbatch BASELINE_UNET_param_8.sh
+sbatch BASELINE_UNET_param_9.sh
+sbatch BASELINE_UNET_param_10.sh
+sbatch BASELINE_UNET_param_11.sh
+sbatch BASELINE_UNET_param_12.sh

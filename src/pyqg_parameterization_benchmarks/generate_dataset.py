@@ -35,13 +35,13 @@ if __name__ == '__main__':
     # ----------------------------------
     # Definition of the help message that will be shown on the terminal
     usage = """
-    USAGE: python generate_dataset.py --save_folder          <X>                                                                         
-                                      --simulation_type      <X>                                                                               
-                                      --target_sample_size   <X>                                                                              
-                                      --operator_cf          <X>                                                                              
-                                      --skipped_time         <X>                                                                              
-                                      --nb_threads           <X>                                                                              
-                                      --memory               <X>                                                                              
+    USAGE: python generate_dataset.py --save_folder          <X>                                                                   
+                                      --simulation_type      <X>                                                                   
+                                      --target_sample_size   <X>                                                                   
+                                      --operator_cf          <X>                                                                   
+                                      --skipped_time         <X>                                                                   
+                                      --nb_threads           <X>                                                                   
+                                      --memory               <X>                                                                   
                                       --save_high_res        <X>
     """
     # Initialization of the parser
@@ -114,15 +114,17 @@ if __name__ == '__main__':
         f"Assert: Skipped time ({args.skipped_time} [Years]) must be lower than simulation duration ({sim_duration[args.simulation_type]} [Years])"
 
     # Determine the sampling frequency needed to reach the target sample size (HYP : 10 years - skipped time, dt = 1h)
-    sampling_frequency = math.ceil((365 * (10 - args.skipped_time) * 24)/args.target_sample_size)
+    sampling_frequency = math.floor((365 * (sim_duration[args.simulation_type] - args.skipped_time) * 24)/args.target_sample_size)
 
     # Real number of samples created
-    nb_samples = (365 * 10 * 24)/sampling_frequency
-
+    nb_samples = math.floor((365 * (sim_duration[args.simulation_type] - args.skipped_time) * 24)/sampling_frequency)
+    
     # Compute the needed memory
     nd_memory = needed_memory(nb_samples, args.save_high_res)
 
-    print(nd_memory)
+    # Displaying information over terminal
+    print("Sampling frequency = ", sampling_frequency)
+    print("Number of samples  = ", nb_samples)
     
     # Checking if enough memory has been allocated
     assert args.memory > nd_memory, \
@@ -131,18 +133,18 @@ if __name__ == '__main__':
     # Checking if there are enough samples to reach the target sample size (2)
     assert nb_samples >= args.target_sample_size, \
         f"Assert: Impossible to reach target sample size ({args.target_sample_size}), reduce the skipped time ({args.skipped_time} [Years])"
-
+    
     # ----------------------------------
     #      Simulation initialization
     # ----------------------------------
     # Retreives the simulation type from the parser
     simulation_type = args.simulation_type
-
+    
     # Definition of the parameters for each simulation type
     nx        = [256        , 256   , 256        , 256  ,  256, 256]
     dt        = [1          , 1     , 1          , 1    ,    1,   1]
     tmax      = [10         , 10    , 2          , 2    ,   10,  10]
-    tavestart = [5          , 5     , 1          , 1    ,    5,   5]
+    tavestart = [0          , 0     , 0          , 0    ,    0,   0]
     rek       = [5.789e-7   , 7e-08 , 5.789e-7   , 7e-08,   -1,  -1]
     delta     = [0.25       , 0.1   , 0.25       , 0.1  , 0.25, 0.1]
     beta      = [1.5 * 1e-11, 1e-11 , 1.5 * 1e-11, 1e-11,   -1,  -1]
@@ -158,8 +160,8 @@ if __name__ == '__main__':
     simulation_parameters_training              = {}
     simulation_parameters_training['nx']        = nx       [simulation_type]
     simulation_parameters_training['dt']        = dt       [simulation_type] * 60 * 60
-    simulation_parameters_training['tmax']      = tmax     [simulation_type] * 24 * 60 * 60 * 360
-    simulation_parameters_training['tavestart'] = tavestart[simulation_type] * 24 * 60 * 60 * 360
+    simulation_parameters_training['tmax']      = tmax     [simulation_type] * 24 * 60 * 60 * 365
+    simulation_parameters_training['tavestart'] = tavestart[simulation_type] * 24 * 60 * 60 * 365
     simulation_parameters_training['rek']       = rek      [simulation_type] if simulation_type < 4 else rek_random
     simulation_parameters_training['delta']     = delta    [simulation_type]
     simulation_parameters_training['beta']      = beta     [simulation_type] if simulation_type < 4 else beta_random

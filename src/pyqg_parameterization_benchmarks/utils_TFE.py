@@ -35,7 +35,6 @@ import pyqg_parameterization_benchmarks.coarsening_ops as coarsening
 from   pyqg_parameterization_benchmarks.utils          import *
 from   pyqg_parameterization_benchmarks.plots_TFE      import *
 
-
 # ----------------------------------------------------------------------------------------------------------
 #
 #                                                    Asserts
@@ -171,6 +170,23 @@ def config_for(model):
         config[prop] = getattr(model, prop)
     return config
 
+def get_sim_configuration(dataset, tmax_years = 10):
+    
+    # Retreiving all the attributes
+    sim_attrs = dict(dataset.attrs)
+    
+    # Contains all the simulations parameters needed
+    sim_param = {
+        "nx"        : 64,
+        "dt"        : sim_attrs["pyqg:dt"],
+        "tmax"      : tmax_years * 60 * 60 * 24 * 360,
+        "tavestart" : sim_attrs["pyqg:tavestart"],
+        "rek"       : sim_attrs["pyqg:rek"],
+        "delta"     : sim_attrs["pyqg:delta"],
+        "beta"      : sim_attrs["pyqg:beta"]
+    }
+    return sim_param
+
 # ----------------------------------------------------------------------------------------------------------
 #
 #                                                Parameterizations
@@ -206,40 +222,20 @@ def minibatch(*arrays, batch_size = 64, as_tensor = True, shuffle = True):
 #                                                Offline testing
 #
 # ----------------------------------------------------------------------------------------------------------
-def get_param_type(param_names):
-    """
-    Documentation
-    -------------
-    Return a list containing the type of target predicted by the model where:
-    """
-    # Stores the different target types
-    types = list()
-
-    # Looping over all the parameterizations loaded:
-    for p in param_names:
-
-        if "q_subgrid_forcing" in p:
-            types.append(0)
-        if "q_forcing_total"   in p:
-            types.append(1)
-        if "uq_subgrid_flux"   in p:
-            types.append(2)
-        if "vq_subgrid_flux"   in p:
-            types.append(3)
-            
-    return types
-
-def imshow_offline(arr):
+def imshow_offline(arr, cmap_color = "inferno"):
     """
     Documentation
     -------------
     Used to display the R^2/corr plot done for offline testing and return their mean value
     """
     # Computes mean value of measured variable
-    mean = arr.mean().data
+    mean = 0
+    for a in arr:
+        mean += a.mean().data
+    mean = mean/len(arr)
     
     # Creation of the plot
-    plt.imshow(arr, vmin = 0, vmax = 1, cmap = 'inferno')
+    plt.imshow(arr[0], vmin = 0, vmax = 1, cmap = cmap_color)
     plt.text(32, 32, f"{mean:.2f}", color = ('white' if mean < 0.75 else 'black'), \
              fontweight = 'bold', ha = 'center', va = 'center', fontsize = 16)
     plt.xticks([]); plt.yticks([])
@@ -332,7 +328,7 @@ def load_data(datasets_name, datasets_type = ["ALR"]):
 
     # Loading the data
     for i, n in enumerate(datasets_name):
-
+        
         # Current dataset
         curr_data = main_directory + n + "/"
 
@@ -353,6 +349,7 @@ def load_data(datasets_name, datasets_type = ["ALR"]):
             loaded_ALR = xr.load_dataset(curr_data + "dataset_ALR.nc")
             data_ALR   = loaded_ALR if i == 0 else \
                          xr.concat([data_ALR, loaded_ALR], dim = "time")
+            loaded_ALR.close()
 
     return data_HR, data_LR, data_ALR
     
@@ -405,15 +402,15 @@ def generateData(model_HR, save_HR, coarsening_index, skipped_time,
     - Low resolution           (= LR,  nx = 64 )
     """
     # Determine the number of time steps to skip
-    skipped_steps = skipped_time * 365 * 24
-
+    skipped_steps = skipped_time * 365 * 24 * 60 * 60
+    
     # Stores the data associated to the different steps
     snapshots_HIGH_RESOLUTION, snapshots_AUG_LOW_RESOLUTION, snapshots_LOW_RESOLUTION = list(), list(), list()
 
     # Stores the different models
-    model_ALR = 1
-    model_LR  = pyqg.QGModel(nx = low_res_nx, ntd = number_threads, **config_for(model_HR))
-
+    model_ALR = None
+    model_LR  = pyqg.QGModel(nx = low_res_nx, ntd = number_threads, tavestart = 0, **config_for(model_HR))
+    
     #---------------------------------------
     #         Running the simulation
     #---------------------------------------
@@ -422,7 +419,7 @@ def generateData(model_HR, save_HR, coarsening_index, skipped_time,
         # Computing next step of simulation
         model_HR._step_forward()
         model_LR._step_forward()
-
+    
         # Sampling of data
         if model_HR.tc % sampling_freq == 0 and skipped_steps < model_HR.t:
 
@@ -440,7 +437,7 @@ def generateData(model_HR, save_HR, coarsening_index, skipped_time,
                 
             snapshots_LOW_RESOLUTION.append(model_LR.to_dataset().copy(deep = True))
             snapshots_AUG_LOW_RESOLUTION.append(add_Forcing_Fluxes(model_ALR))
-
+            
     # Only the last step is saved
     if save_HR == False:
         snapshots_HIGH_RESOLUTION.append(model_HR.to_dataset().copy(deep = True))

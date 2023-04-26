@@ -19,11 +19,11 @@
 #
 # --------- Standard ---------
 import os
-import numpy             as np
-import pandas            as pd
-import xarray            as xr
-import seaborn           as sns
-import matplotlib.pyplot as plt
+import numpy               as np
+import pandas              as pd
+import xarray              as xr
+import seaborn             as sns
+import matplotlib.pyplot   as plt
 
 # --------- PYQG ---------
 import pyqg
@@ -171,9 +171,8 @@ def comparaison_plot_offline(metrics, model_folder, x = "Model", y = 'R2_z0', yl
     """
     plot = sns.barplot(x = x, y = y, data = metrics.sort_values(y), palette = 'magma')
     plot.set(ylim = (min_v - 0.02, max_v + 0.02), xlabel = None, ylabel = ylab)
-    plt.xticks(rotation = 90, fontsize = 12)
-    plot.figure.savefig(model_folder + f"___PLOTS___/{y}.svg", bbox_inches = "tight")
-    plt.show()
+    plt.xticks(rotation = 90, fontsize = 8)
+    plot.figure.savefig(model_folder + f"{y}.svg", bbox_inches = "tight")
     plt.close()
     
 def beautify_model_names(model_names):
@@ -187,67 +186,292 @@ def beautify_model_names(model_names):
         beauty = ""
         
         # Base
-        if "BASE" in n:
-            beauty_model_names.append("BASE_q → $S_{q_{total}, 5000}$")
+        if "BASE_FCNN_q_to_q_forcing_total" in n:
+            beauty_model_names.append(r"FCNN(q → $S_{q_{total}}$)")
             continue
-            
+        if "BASE_FCNN_q_to_q_subgrid_forcing" in n:
+            beauty_model_names.append(r"FCNN(q → $S_{q_{subgrid}}$)")
+            continue
+        if "BASE_FCNN_q_to_q_fluxes" in n:
+            beauty_model_names.append(r"FCNN(q → $\phi_{q}$)")
+            continue
+
         # Parameterization name
         if "FCNN"   in n:
-            beauty += "FCNN_"
+            beauty += "FCNN("
         if "KASKADE" in n:
-            beauty += "KASKADE_"
+            beauty += "KASK("
+        if "FNO" in n:
+            beauty += "FNO("
+        if "UNET" in n:
+            beauty += "UNET("
             
         # Input beautification
         if 'q_to' in n:
             beauty += "q → "
         if "q_u_to" in n:
-            beauty += "(q, u) → "
+            beauty += "q, u → "
         if "q_v_to" in n:
-            beauty += "(q, v) → "
+            beauty += "q, v → "
         if "q_u_v_to" in n:
-            beauty += "(q, u, v) → "    
+            beauty += "q, u, v → "    
     
-        # Training information beautification
-        nb_samples = ""
-        if "500" in n:
-            nb_samples = ",500"
-        if "1000" in n:
-            nb_samples = ",1000"
-        if "2000" in n:
-            nb_samples = ",2000"
-        if "3000" in n:
-            nb_samples = ",3000"
-        if "4000" in n:
-            nb_samples = ",4000"
-        if "5000" in n:
-            nb_samples = ",5000"
-        if "6000" in n:
-            nb_samples = ",5000"
-        if "7000" in n:
-            nb_samples = ",5000"
-        if "8000" in n:
-            nb_samples = ",5000"
-        if "9000" in n:
-            nb_samples = ",5000"
-        if "10000" in n:
-            nb_samples = ",10000"
-        if "20000" in n:
-            nb_samples = ",20000"  
+        # Dataset used
+        dataset = "N"
+        
+        # ---------- EDDIES -----------
+        if "EDDIES_TRAINING_MIXED_5000" in n:
+            dataset = "ME_{5000}" 
+        if "EDDIES_TRAINING_MIXED_10000" in n:
+            dataset = "ME_{10000}" 
+        if "EDDIES_TRAINING_MIXED_20000" in n:
+            dataset = "ME_{20000}" 
             
+        if "EDDIES_TRAINING_UNIQUE_0500" in n:
+            dataset = "UE_{0500}" 
+        if "EDDIES_TRAINING_UNIQUE_1000" in n:
+            dataset = "UE_{1000}" 
+        if "EDDIES_TRAINING_UNIQUE_2000" in n:
+            dataset = "UE_{2000}" 
+        if "EDDIES_TRAINING_UNIQUE_3000" in n:
+            dataset = "UE_{3000}" 
+        if "EDDIES_TRAINING_UNIQUE_4000" in n:
+            dataset = "UE_{4000}" 
+        if "EDDIES_TRAINING_UNIQUE_5000" in n:
+            dataset = "UE_{5000}" 
+
+        # ---------- JETS -----------
+        if "JETS_TRAINING_MIXED_5000" in n:
+            dataset = "MJ_{5000}" 
+        if "JETS_TRAINING_MIXED_10000" in n:
+            dataset = "MJ_{10000}" 
+        if "JETS_TRAINING_MIXED_20000" in n:
+            dataset = "MJ_{20000}" 
+            
+        if "JETS_TRAINING_UNIQUE_0500" in n:
+            dataset = "UJ_{0500}" 
+        if "JETS_TRAINING_UNIQUE_1000" in n:
+            dataset = "UJ_{1000}" 
+        if "JETS_TRAINING_UNIQUE_2000" in n:
+            dataset = "UJ_{2000}" 
+        if "JETS_TRAINING_UNIQUE_3000" in n:
+            dataset = "UJ_{3000}" 
+        if "JETS_TRAINING_UNIQUE_4000" in n:
+            dataset = "UJ_{4000}" 
+        if "JETS_TRAINING_UNIQUE_5000" in n:
+            dataset = "UJ_{5000}" 
+            
+        # ---------- FULL -----------
+        if "FULL_TRAINING_MIXED_5000" in n:
+            dataset = "F_{5000}"
+        if "FULL_TRAINING_MIXED_10000" in n:
+            dataset = "F_{10000}"
+        if "FULL_TRAINING_MIXED_20000" in n:
+            dataset = "F_{20000}"
+        if "FULL_TRAINING_MIXED_40000" in n:
+            dataset = "F_{40000}"
+        
+        # Number of epochs
+        epoch_number = "50"
+        for i in range(0, 101):
+            if f"_{str(i)}---" in n:
+                epoch_number = i
+                break
+    
         # Output beautification
         if "q_subgrid_forcing" in n:
-            beauty += "$S_{q" + nb_samples + "}$"    
+            beauty += r"$S_{q," + dataset + r", " + str(epoch_number) + r"}$)"    
         if "q_forcing_total"   in n:
-            beauty += "$S_{q_{total}" + nb_samples + "}$"
-        if "uq_subgrid_flux"   in n:
-            beauty += "$\Phi_{(u,q)" + nb_samples + "}$"
-        if "vq_subgrid_flux"   in n:
-            beauty += "$\Phi_{(v,q)" + nb_samples + "}$"
+            beauty += r"$S_{q_{total}," + dataset + r", " + str(epoch_number) + r"}$)"
+        if "q_fluxes"          in n:            
+            beauty += r"$\phi_{q," + dataset + r", " + str(epoch_number) + r"}$)"
             
         beauty_model_names.append(beauty)
             
     return beauty_model_names
+    
+# ----------------------------------------------------------------------------------------------------------
+#
+#                                          Online Test (Energy budget comparaison)
+#
+# ----------------------------------------------------------------------------------------------------------
+def energy_budget_term(model, term):
+    
+    # Retreives a specific diagnostic quantity (Ex : KEflux)
+    val = model[term]
+
+    # Retreives the correction to it made by the parameterization (if exist)
+    if 'paramspec_' + term in model:
+        val += model['paramspec_' + term]
+    
+    # Computing E(k, l) -> E(k) with l the meridional wavenumber (and k the zonal wavenumber)
+    return val.sum('l')
+
+def energy_budget_figure(comp_base, comp_anal, comp_nn, skip = 0):
+    
+    # Creation of a figure containing
+    fig = plt.figure(figsize = (12, 12))
+    
+    # Used to plot results in grid shape
+    gs = gridspec.GridSpec(6, 2)
+    
+    # Used to correct plot
+    vmax = 0
         
+    # Looping over every comparison plots
+    for m, models in zip([0, 2, 4], [comp_base, comp_anal, comp_nn]):
+        
+        for i, j, term in zip([0, 0, 1, 1], [0, 1, 0, 1], ['KEflux','APEflux','APEgenspec','KEfrictionspec']):
+
+            # Creation of subplot ((2 by 2 for terms) * 3 comparison plots)
+            plt.subplot(gs[i + m, j])
+
+            for model, label in models:
+
+                # Total energy contribution of eack k at each time slice
+                spec = energy_budget_term(model, term)
+
+                # Zonal wavenumber values
+                k_values = model.k[skip:]
+
+                # Retreving last time slice (can be changed)
+                spec = spec[skip:].isel(time = -1)
+
+                # Energy plot
+                plt.semilogx(k_values, spec, label = label, lw = 1, ls = ('--' if '+' in label else '-'))
+
+                # Used to rescale y axis
+                vmax = max(vmax, spec[skip:].max())
+
+            # Adding title with term
+            plt.title(term, fontsize = 9, loc = "right")
+            
+            # Adding grid for better visuals
+            plt.grid(which = 'both', alpha = 0.1)
+    
+            # Adding x label in the last row of the plot
+            if i + m == 5:
+                plt.xlabel("Zonal wavenumber $[m^{-1}]$")
+              
+            # Adding legend on the right side of the plots
+            if i == 0 and j == 1:
+                plt.legend([l for _, l in models], bbox_to_anchor = (1.1, 1), loc = 'upper left', borderaxespad = 0)
+            
+            # Marking horizontal axis for better visibility
+            plt.axhline(0, color = 'gray', ls='--')
+        
+    # Adding small shift to give air to the plot
+    vmax = vmax + 0.1 * vmax
+
+    # Resizing all the axes
+    for ax in fig.axes:
+        ax.set_ylim(-vmax, vmax)
+            
+    # Adding y label on the left at mid level
+    plt.subplot(gs[1:2, 0])
+    plt.ylabel("Energy transfer $[m^2 s^{-3}]$", loc = "top")
+    plt.subplot(gs[4:5, 0])
+    plt.ylabel("Energy transfer $[m^2 s^{-3}]$")
+    
+    return fig
+
+def vorticity_distribution_figure(comp_base, comp_anal, comp_nn, variable = "q", level = 0):
+    
+    # Creation of a figure containing
+    fig = plt.figure(figsize = (15, 15))
+    
+    # Used to plot results in grid shape
+    gs = gridspec.GridSpec(3, 4, width_ratios = [1, 1, 1, 0.05])
+        
+    # Looping over every comparison plots
+    for i, models in enumerate([comp_base, comp_anal, comp_nn]):
+        
+        # Model plot index
+        m_index = 0
+        
+        for model, label in models:
+    
+            # Creation of subplot ((2 by 2 for terms) * 3 comparison plots)
+            plt.subplot(gs[i, m_index])
+
+            # Total energy contribution of eack k at each time slice
+            plt.imshow(model[variable].isel(lev = level, time = -1), cmap = 'PuOr', vmin =- 3e-5, vmax = 3e-5)
+                
+            # Adding title with term
+            plt.title(label, fontsize = 12, loc = "right")
+            
+            # Adding grid for better visuals
+            plt.grid(which = 'both', alpha = 0.1)
+    
+            # Adding x label in the last row of the plot
+            if i == 2:
+                plt.xlabel("Longitude")
+                
+            # Adding y label on the left column
+            if m_index == 0:
+                plt.ylabel("Latitude")
+            
+            m_index = m_index + 1
+    
+    
+        cbarax = plt.subplot(gs[i, -1])
+        plt.colorbar(label = f"Potential Vorticity - Level {str(level)} [$s^{-1}$]", cax = cbarax)
+    
+    return fig
+
+def diagnostic_similarities_figure(m, baseline, analytical):
+    
+    # Retreives all the metrics that evaluated
+    metrics = list(m[0].keys())
+    
+    # Beautify xlabels for better visuals
+    x_labels = ['$q_x$', '$q_y$', '$u_x$', '$u_y$', '$v_x$', '$v_y$', '$KE_x$', '$KE_y$', '$ENS_x$', '$ENS_y$', 
+                '$KE_{x}$', '$KE_{y}$', '$ENS_{x}$', '$ENS_{y}$', '$KE_{flux}$', '$APE_{flux}$', '$APE_{gen}$', '$KE_{fric}$']
+    
+    with plt.rc_context({'font.size': 16}):
+
+        # Creation of a figure 
+        fig = plt.figure(figsize = (20, 13))
+
+        # Used to plot results in grid shape
+        gs = gridspec.GridSpec(2, 1)
+
+        # ----- BASELINE -----
+        plt.subplot(gs[0, 0])
+
+        # Plotting each metrics
+        for sims, label in [m] + baseline :
+            plt.plot([sims[k] for k in metrics], 
+                      label = label, marker = 'o', markeredgecolor = 'white', markersize = 12) 
+
+        # Final adjustments
+        plt.legend(ncol = 4, framealpha = 1, loc = "lower left")
+        plt.axhline(0, ls = '--', color = 'black')
+        plt.axvline(x = 9.5, ymin = 0, ymax = 1, color = 'black', label = 'axvline - % of full height')
+        plt.xticks(np.arange(len(metrics)), x_labels, rotation = 0, fontsize = 16)
+        plt.ylabel("Similarity Score", labelpad = 15)
+        plt.ylim(-2, 1)
+
+        # ----- ANALYTICAL -----
+        plt.subplot(gs[1, 0])
+
+        # Plotting each metrics
+        for sims, label in [m] + analytical :
+            plt.plot([sims[k] for k in metrics], 
+                      label = label, marker = 'o', markeredgecolor = 'white', markersize = 12) 
+
+        # Final adjustments
+        plt.legend(ncol = 4, framealpha = 1, loc = "lower left")
+        plt.axhline(0, ls = '--', color = 'black')
+        plt.axvline(x = 9.5, ymin = 0, ymax = 1, color = 'black', label = 'axvline - % of full height')
+        plt.xticks(np.arange(len(metrics)), x_labels, rotation = 0, fontsize = 16)
+        plt.ylabel("Similarity Score", labelpad = 15)
+        plt.ylim(-2,1)
+        plt.text(2, -2.7, "Distributional difference", fontsize = 16)
+        plt.text(13, -2.7, "Spectral difference", fontsize = 16)
+            
+    return fig
+
 # ----------------------------------------------------------------------------------------------------------
 #
 #                                                  State variables
@@ -275,11 +499,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
 
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.q.isel(lev = l, time = -1).plot()
+            high_res.q.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.q.isel(lev = l, time = -1).plot()
+            low_res.q.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the potential vorticity q for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')
@@ -288,11 +512,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
 
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.u.isel(lev = l, time = -1).plot()
+            high_res.u.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.u.isel(lev = l, time = -1).plot()
+            low_res.u.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the horizontal velocity u for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')
@@ -301,11 +525,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
                     
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.v.isel(lev = l, time = -1).plot()
+            high_res.v.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.v.isel(lev = l, time = -1).plot()
+            low_res.v.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the vertical velocity y for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')
@@ -314,11 +538,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
                     
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.ufull.isel(lev = l, time = -1).plot()
+            high_res.ufull.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.ufull.isel(lev = l, time = -1).plot()
+            low_res.ufull.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the horizontal velocity u with background flow for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')
@@ -328,11 +552,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
                     
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.vfull.isel(lev = l, time = -1).plot()
+            high_res.vfull.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.vfull.isel(lev = l, time = -1).plot()
+            low_res.vfull.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the vertical velocity v with background flow for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')
@@ -342,11 +566,11 @@ def plotStateVariable(high_res, low_res, state_variable = "q", save_path = ""):
                     
             # High resolution
             plt.subplot(1, 2, 1)
-            high_res.streamfunction.isel(lev = l, time = -1).plot()
+            high_res.streamfunction.isel(lev = l, time = 0).plot()
 
             # Low resolution
             plt.subplot(1, 2, 2)
-            low_res.streamfunction.isel(lev = l, time = -1).plot()
+            low_res.streamfunction.isel(lev = l, time = 0).plot()
 
             # Adding a caption to the plot
             fig.text(0.45, -0.1, f"$Figure$: Representation of the streamfunction for the high resolution (left) and low resolution simulations (right) - {caption[l]}", ha = 'center')

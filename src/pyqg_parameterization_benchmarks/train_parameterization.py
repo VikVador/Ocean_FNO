@@ -17,11 +17,10 @@ import argparse
 from   torch.utils.tensorboard import SummaryWriter
 
 # --------- PYQG Benchmark ---------
-from pyqg_parameterization_benchmarks.utils                  import *
-from pyqg_parameterization_benchmarks.utils_TFE              import *
-from pyqg_parameterization_benchmarks.plots_TFE              import *
-from pyqg_parameterization_benchmarks.neural_networks        import FullyCNN, FCNNParameterization
-from pyqg_parameterization_benchmarks.kaskade                import Kaskade,  KASKADEParameterization
+from pyqg_parameterization_benchmarks.utils               import *
+from pyqg_parameterization_benchmarks.utils_TFE           import *
+from pyqg_parameterization_benchmarks.plots_TFE           import *
+from pyqg_parameterization_benchmarks.neural_networks     import NN_Parameterization_Handler
 
 # -----------------------------------------------------
 #                         Main
@@ -68,7 +67,6 @@ if __name__ == '__main__':
         '--param_type',
         help = 'Type of parameterization used to learn closure',
         type = str,
-        choices = ["FCNN", "KASKADE"],
         default = "FCNN")
 
     parser.add_argument(
@@ -80,7 +78,7 @@ if __name__ == '__main__':
         '--targets',
         help = 'Type of output predicted by the parameterization',
         type = str,
-        choices = ['q_forcing_total', 'q_subgrid_forcing', 'u_subgrid_forcing', 'v_subgrid_forcing', 'uq_subgrid_flux', 'vq_subgrid_flux'])
+        choices = ['q_forcing_total', 'q_subgrid_forcing', 'q_fluxes'])
 
     parser.add_argument(
         '--num_epochs',
@@ -166,46 +164,29 @@ if __name__ == '__main__':
         input_str += "_" + i
     
     # Creation of a more complete model name
-    curr_model_name = f"{args.param_name}{input_str}_to_{args.targets}_{str(1000 * len(args.folder_training))}_{args.num_epochs}"
+    curr_model_name = f"{args.folder_training[0]}_{args.num_epochs}---{args.param_name}{input_str}_to_{args.targets}"
     
     # Determine the complete path of the result folder
     model_name, model_path = get_model_path(curr_model_name)
     
-    print(model_name, model_path)
-    
     # Initialization of tensorboard
-    tsb = SummaryWriter(f"../../runs/{args.param_type}/{args.sim_type}/{model_name}")
+    tsb = SummaryWriter(f"../../runs/{args.folder_training[0]}/{args.sim_type}/{args.num_epochs}/{args.param_name}{input_str}_to_{args.targets}")
+    
+    # Adaptating targets (if fluxes, needs to predict in u and v directions ! Thus 2 outputs)
+    args.targets = [args.targets] if args.targets in ["q_forcing_total", "q_subgrid_forcing"] else ["uq_subgrid_flux", "vq_subgrid_flux"]
+            
+    # Training parameterization
+    NN_Parameterization_Handler.train_on(dataset            = data_ALR_train, 
+                                         dataset_validation = data_ALR_valid,
+                                         directory          = model_path,
+                                         param_name         = args.param_name,
+                                         inputs             = args.inputs,
+                                         targets            = args.targets,
+                                         num_epochs         = args.num_epochs, 
+                                         zero_mean          = args.zero_mean, 
+                                         padding            = args.padding,
+                                         tensorboard        = tsb)
 
-    # -----------------------------------------------------
-    # -------- Fully convolutionnal neural network --------
-    # -----------------------------------------------------
-    if args.param_type == "FCNN":
-    
-        FCNN_trained = FCNNParameterization.train_on(dataset            = data_ALR_train, 
-                                                     dataset_validation = data_ALR_valid,
-                                                     directory          = model_path,
-                                                     inputs             = args.inputs,
-                                                     targets            = [args.targets],
-                                                     num_epochs         = args.num_epochs, 
-                                                     zero_mean          = args.zero_mean, 
-                                                     padding            = args.padding,
-                                                     tensorboard        = tsb)
-        
-    # -----------------------------------------------------
-    # -------------- Kaskade neural network ---------------
-    # -----------------------------------------------------
-    if args.param_type == "KASKADE":
-    
-        KASKADE_trained = KASKADEParameterization.train_on(dataset               = data_ALR_train,  
-                                                           dataset_validation    = data_ALR_valid,
-                                                           directory             = model_path,
-                                                           inputs                = args.inputs,
-                                                           targets               = [args.targets],
-                                                           num_epochs            = args.num_epochs, 
-                                                           zero_mean             = args.zero_mean, 
-                                                           padding               = args.padding,
-                                                           tensorboard           = tsb)
-        
     # Closing tensorboard
     tsb.close()
     
