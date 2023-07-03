@@ -112,7 +112,7 @@ if __name__ == '__main__':
     #      Accessing & Loading Trained / Baseline Parameterizations
     # ------------------------------------------------------------------
     # Name of known parameterizations
-    whitelist = ["FCNN", "KASKADE", "UNET", "RESNET"]
+    whitelist = ["FCNN", "KASKADE", "UNET", "FFNO", "FNO"]
 
     # Path to baseline and trained models
     path_models   = "../../models/" + args.folder_models + "/"
@@ -130,6 +130,7 @@ if __name__ == '__main__':
         for w in whitelist:
             if w in n:
                 name_models.append(n)
+                break
 
     # Analyzing the baseline           
     for n in name_baseline_temp:
@@ -221,7 +222,7 @@ if __name__ == '__main__':
                 plt.subplot(gs[plt_id, 0])
                 plt.axis('on')
                 plt.title(r"Upper $\rho$" if plt_id == 0 else "")
-                plt.ylabel(f"{beautify_model_names([n])[0]}", rotation = 0, fontsize = 12, labelpad = 80)
+                plt.ylabel(f"{beautify_model_names([n])[0]}", rotation = 0, fontsize = 12, labelpad = 180)
 
                 # Correlation z = 0
                 corr_z0.append(imshow_offline(corr_z0_pred, cmap_color = cmap_color)) if b_index == 0 else \

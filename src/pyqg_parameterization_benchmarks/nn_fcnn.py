@@ -29,6 +29,10 @@ class FullyCNN(nn.Sequential):
         else:
             raise ValueError('FullyCNN - Unknow value for padding parameter, i.e. should be None or circular')
 
+        kw = {}
+        if padding == 'circular':
+            kw['padding_mode'] = 'circular'
+            
         # Dimension of input and output data
         n_in  = len(inputs)
         n_out = len(targets)
@@ -39,9 +43,6 @@ class FullyCNN(nn.Sequential):
         self.targets      = targets
         self.is_zero_mean = zero_mean
         self.n_in         = n_in
-        kw = {}
-        if padding == 'circular':
-            kw['padding_mode'] = 'circular'
 
         #-----------------------------------------------------------------------------------
         #                                   Architecture
@@ -74,3 +75,6 @@ class FullyCNN(nn.Sequential):
             return pred - pred.mean(dim = (1,2,3), keepdim = True)
         else:
             return pred
+        
+    def count_parameters(self,):
+        print("Model parameters  =", sum(p.numel() for p in self.parameters() if p.requires_grad))

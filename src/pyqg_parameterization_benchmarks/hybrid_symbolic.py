@@ -23,7 +23,6 @@ from   sklearn.linear_model import LinearRegression
 # --------- PYQG Benchmark ---------
 from pyqg_parameterization_benchmarks.utils      import FeatureExtractor, Parameterization
 
-
 def make_custom_gplearn_functions(ds):
     """Define custom gplearn functions for spatial derivatives that are specific
     to the spatial shape of that particular dataset"""

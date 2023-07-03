@@ -117,7 +117,7 @@ if __name__ == '__main__':
     #      Accessing & Loading Trained Parameterizations
     # ------------------------------------------------------
     # Name of known parameterizations
-    whitelist = ["FCNN", "KASKADE", "UNET"]
+    whitelist = ["FCNN", "KASKADE", "UNET", "FNO", "FFNO"]
 
     # Path to baseline and trained models
     path_models   = "../../models/" + args.folder_models + "/"
@@ -168,8 +168,8 @@ if __name__ == '__main__':
             param = NN_Parameterization_Handler(f"../../models/___BASELINE___/EDDIES_TRAINING_UNIQUE_5000_50---{n}")
 
             # Generating simulation
-            sim = param.run_online(sim_duration       = 0.5, # 10,
-                                   skipped_time       = 0,   # 6 if "JETS" == args.type_sim else 3,
+            sim = param.run_online(sim_duration       = 10,
+                                   skipped_time       = 6 if "JETS" == args.type_sim else 3,
                                    target_sample_size = 1000,
                                    **get_sim_configuration(data_LR))
 
@@ -222,8 +222,8 @@ if __name__ == '__main__':
             print("- Generating Simulation Results : " + n + "\n")
 
             # Generating simulation
-            sim = parameterizations_analytical[i].run_online(sim_duration       = 0.5, # 10,
-                                                             skipped_time       = 0,   # 6 if "JETS" == args.type_sim else 3,
+            sim = parameterizations_analytical[i].run_online(sim_duration       = 10,
+                                                             skipped_time       = 6 if "JETS" == args.type_sim else 3,
                                                              target_sample_size = 1000,
                                                              **get_sim_configuration(data_LR))
 
@@ -277,10 +277,17 @@ if __name__ == '__main__':
             print("- Generating Simulation Results : " + name + "\n")
 
             # Generation of online results using trained parameterization
-            online_results = param.run_online(sim_duration       = 0.5, # 10,
-                                              skipped_time       = 0,   # 6 if "JETS" == args.type_sim else 3,
-                                              target_sample_size = 1000,
-                                              **get_sim_configuration(data_LR))
+            try:
+                online_results = param.run_online(sim_duration       = 10,
+                                                  skipped_time       = 6 if "JETS" == args.type_sim else 3,
+                                                  target_sample_size = 1000,
+                                                  **get_sim_configuration(data_LR))
+            except AssertionError as e:
+                print("Online Simulation - CFL criterion violated")
+                continue
+            except:
+                raise
+
 
             # Save results for later use
             online_results.to_netcdf(path + "/dataset_LR.nc")
@@ -318,6 +325,9 @@ if __name__ == '__main__':
         # Check if plot folder exists
         if not os.path.exists(save_folder):
             os.makedirs(save_folder)
+            os.makedirs(save_folder + "/EnergyBudget/")
+            os.makedirs(save_folder + "/VorticityDistribution/")
+            os.makedirs(save_folder + "/DistributionSimilarities/")
 
         # ------------------------------------------------------
         #                     Energy Budget
@@ -330,6 +340,7 @@ if __name__ == '__main__':
                                      simulation_hr + simulation_online + simulation_baseline)
         plt.tight_layout()
         plt.savefig(save_folder + f"/EnergyBudget/EBF__{name}.svg", bbox_inches = "tight")
+        plt.close()
 
         # ------------------------------------------------------
         #                 Vorticity Distribution
@@ -346,6 +357,7 @@ if __name__ == '__main__':
 
             plt.tight_layout()
             plt.savefig(save_folder + f"/VorticityDistribution/VDF__z_{str(z)}_{name}.svg", bbox_inches = "tight")
+            plt.close()
 
         # Display information over terminal (14)
         print("\nDone\n")
@@ -367,7 +379,7 @@ if __name__ == '__main__':
 
     diagnostic_analyticals = [(diagnostic_similarities(datasets_analytical[i], target = data_HR, baseline = data_LR),
                               name_analyticals[i])
-                              for i in range(len(datasets_baseline))]
+                              for i in range(len(datasets_analytical))]
 
     # Displaying information over terminal (17)
     print("\nDone\n")
@@ -378,7 +390,8 @@ if __name__ == '__main__':
 
         fig_3 = diagnostic_similarities_figure(m, diagnostic_baselines, diagnostic_analyticals)
         plt.tight_layout()
-        plt.savefig(save_folder + f"DistributionSimilarities/DSF_{m[1]}.svg", bbox_inches = "tight")
+        plt.savefig(save_folder + f"/DistributionSimilarities/DSF_{m[1]}.svg", bbox_inches = "tight")
+        plt.close()
 
     # Display information over terminal (18)
     print("\nDone\n")

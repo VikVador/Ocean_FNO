@@ -18,19 +18,19 @@
 #    Parameters
 # -----------------
 # Number of jobs to generate
-nb_jobs = 40
+nb_jobs = 1
 
 # Name of the folder containing dataset
-dataset_name = "eddies_training"
+dataset_name = "JETS_TRAINING_UNIQUE_5000"
 
 # Simulation type
-sim_type = 4
+sim_type = 1
 
 # Number of samples targeted
-target_sample = 500
+target_sample = 5000
 
 # Skipped time before sampling
-skipped_time = 0.5
+skipped_time = 6
 
 # Number of threads for parallel computation
 nb_threads = 4
@@ -100,6 +100,6 @@ python -u generate_dataset.py --save_folder {job_name} --simulation_type {str(si
     job_list += f"sbatch {job_name}.sh\n"
 
 # Creating sbatch file for cluster
-job_file = open(f"{dataset_name}_cluster.sh", "w")
+job_file = open(f"CLUSTER_{dataset_name}.sh", "w")
 job_file.write(job_list)
 job_file.close()

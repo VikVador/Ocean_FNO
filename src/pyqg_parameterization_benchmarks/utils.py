@@ -108,7 +108,7 @@ class Parameterization(pyqg.Parameterization):
         params['nx']                       = self.nx
         
         # Initialization of the model
-        model = pyqg.QGModel(twrite = 1000, **params)
+        model = pyqg.QGModel(twrite = 1000, ntd = 4, **params)
 
         # Skipped steps
         skipped_steps = skipped_time * 365 * 24 * 60 * 60
