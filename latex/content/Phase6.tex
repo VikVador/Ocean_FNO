@@ -1,0 +1,67 @@
+%-----------------------------------------
+%
+%							           PHASE 6
+%
+%-----------------------------------------
+\newpage
+\thispagestyle{empty}
+\part{}
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth]{figures/results/PHASE_6_FULL_JETS_OFFLINE_P1.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Offline - Phase 6 - Part 1}}\textbf{|}This table summarize offline results, including correlations (columns 1 and 2) and mean-squared errors (columns 3 and 4), for parameterizations trained on \textit{F5000}, evaluated on dataset \textbf{jets offline} and predicting subgrid flux $\mathbf{\Phi}_q$ (see Eq. \ref{C2 - EQ - Subgrid fluxes}). On the right-hand side, the width value, retained Fourier modes, and total number of layers for the FFNO are provided in the legend. The bottom row presents results obtained using the three FCNN parameterizations introduced in \cite{Benchmarking}.}
+    \label{APP - OFFLINE - PHASE 6 - SENSITIVITY ARCHITECTURE P1 - JETS OFFLINE}
+\end{figure}
+
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.88\linewidth]{figures/results/PHASE_6_FULL_JETS_OFFLINE_P2.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Offline - Phase 6 - Part 2}}\textbf{|}This table summarize offline results, including correlations (columns 1 and 2) and mean-squared errors (columns 3 and 4), for parameterizations trained on \textit{F5000}, evaluated on dataset \textbf{jets offline} and predicting subgrid flux $\mathbf{\Phi}_q$ (see Eq. \ref{C2 - EQ - Subgrid fluxes}). On the right-hand side, the width value, retained Fourier modes, and total number of layers for the FFNO are provided in the legend. The bottom row presents results obtained using the three FCNN parameterizations introduced in \cite{Benchmarking}.}
+    \label{APP - OFFLINE - PHASE 6 - SENSITIVITY ARCHITECTURE P2 - JETS OFFLINE}
+\end{figure}
+
+% --------------------------------------------------
+% --------------------------------------------------
+% -------------------- ONLINE -----------------------
+% --------------------------------------------------
+% --------------------------------------------------
+%
+% --------------- ENERGY BUDGET ---------------
+%
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.84\linewidth, trim={0cm 5cm 10cm 0cm}, clip]{figures/results_online/PHASE_6_SENTITIVITY_ARCHITECTURE_ONLINE_ENERGYBUDGET_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 6 - Energy budget}}\textbf{|}This table displays energy spectra for \textbf{KEflux}, \textbf{KEfrictionspec}, \textbf{APEflux}, and \textbf{APEgenspec} using parameterizations of Tab.\ref{C5 - TAB - PHASE 6}, these were trained on \textbf{full 5000} and tested on \textbf{jets online}. Each parameterization spectrum is compared against high-resolution and various low-resolution simulations, including neural networks from \cite{Benchmarking} and analytical parameterizations from \cite{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.
+}
+    \label{APP - ONLINE - PHASE 6 - ENERGY BUDGET -  FULL 5000 and JETS ONLINE}
+\end{figure}
+
+%
+% --------------- SIMILARITIES ---------------
+%
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.87\linewidth, trim={0cm 5cm 0cm 0cm}, clip]{figures/results_online/PHASE_6_SENTITIVITY_ARCHITECTURE_ONLINE_SIMILARITIES_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 6 - Similarities}}\textbf{|}This table provides a summary of the Earth mover's distance, reformulated as a similarity metric for various flow quantities represented in either spectral or spatiotemporal domains. A value approaching 1 indicates strong agreement between the distribution obtained from high-resolution simulations and the current observations. Negative values are considered unfavorable, and values lower than -0.5 are disregarded. The tested parameterizations comes from Tab.\ref{C5 - TAB - PHASE 6}, they are trained on \textbf{full 5000} and tested on \textbf{jets online}. For comparison, the results of neural networks \citep{Benchmarking} and analytical parameterizations are also presented \citep{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.}
+    \label{APP - ONLINE - PHASE 6 - SIMILARITIES -  FULL 5000 and JETS ONLINE}
+\end{figure}
+
+%
+% --------------- VORTICITY ---------------
+%
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth]{figures/results_online/PHASE_6_SENTITIVITY_ARCHITECTURE_ONLINE_VORTICITY_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 6 - Potential vorticity}}\textbf{|}Visualization of potential vorticity is presented for both upper (first three rows) and lower (last three rows) layers across different simulation types, indicated at the top of each image. Each image represents the $q$ value spanning the entire computational domain after 10 years of simulations. The objective is to emphasize and visualize simulations that lose their physical relevance, becoming mere pixel grids, and to illustrate the divergence from the high-resolution simulation. Furthermore, the evaluated parameterizations are detailed in Tab.\ref{C5 - TAB - PHASE 6}, they were trained using \textbf{full 5000} and assessed against \textbf{jets online}.}
+    \label{APP - ONLINE - PHASE 6 - VORTICITY -  FULL 5000 and JETS ONLINE}
+\end{figure}

@@ -74,12 +74,12 @@ class NN_Parameterization(nn.Module):
                 #                           modes_x = 16, modes_y = 16, width = 32, n_lay = 24, weight_sharing = True)
                 
                 # Version using my library
-                #self.param = FactorizedFNO(in_channels = len(inputs), out_channels = len(targets), zero_mean = zero_mean,
-                #                           modes_x = (0, 16), modes_y = (0, 16), width = 32, n_lay = 24, weight_sharing = True)
+                self.param = FactorizedFNO(in_channels = len(inputs), out_channels = len(targets), zero_mean = zero_mean,
+                                           modes_x = (0, 16), modes_y = (0, 16), width = 32, n_lay = 24, weight_sharing = True)
                 
                 # Version for the final model !
-                self.param = FactorizedFNO(in_channels = len(inputs), out_channels = len(targets), zero_mean = zero_mean,
-                                           modes_x = (0, 32), modes_y = (0, 32), width = 128, n_lay = 20, weight_sharing = True)
+                #self.param = FactorizedFNO(in_channels = len(inputs), out_channels = len(targets), zero_mean = zero_mean,
+                #                           modes_x = (0, 32), modes_y = (0, 32), width = 128, n_lay = 20, weight_sharing = True)
 
             elif self.param_name == "KASKADE":
                 self.param = Kaskade(inputs, targets)

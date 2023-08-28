@@ -1,0 +1,121 @@
+% ------------------------------------------------------------------
+%                                                       Appendix
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\appendixTFE{}{Even more results}{1}{\textit{Torture the data, and it will confess to anything.}"\begin{flushright} - \textit{Ronald Coase}\end{flushright}}
+
+% -------------------------------
+%                        Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Introduction}
+
+In this appendix, you will find the offline results of phases 5 and 6, as well as all the online results involving parameterizations trained on jet-driven flows or evaluated on online simulations of jet flows. Due to the substantial number of results generated, it should be noted that all the missing offline results and online results that involve eddy-trained parameterizations or testing with eddy datasets are available in my GitHub repository. Indeed, less than a third of the results are shown in this master thesis.\\
+
+Throughout this work, ensuring the reproducibility of my results was my top priority. Therefore, all the codes and notebooks created for this work or based on the benchmarking framework of \cite{Benchmarking} have been thoroughly documented. This documentation not only makes it easier for those interested to understand how to use the benchmarking framework, but also allows for a comprehensive overview of all the work done. One of my proudest achievements in terms of code is the master thesis notebook, which is concise, well documented, and enables easy dataset generation, training of new parameterizations, and both offline and online testing.
+
+\vspace{2em}
+\begin{center}
+	\href{https://github.com/VikVador/Ocean-subgrid-parameterizations-in-an-idealized-model-using-machine-learning}{https://github.com/VikVador/Ocean-subgrid-parameterizations-in-an-idealized-model-using-machine-learning}
+\end{center}
+	
+% -------------------------------
+%                        Phases
+% -------------------------------
+%-----------------------------------------
+%
+%							           PHASE 1
+%
+%-----------------------------------------
+\newpage
+\thispagestyle{empty}
+\part{}
+\newpage
+
+% --------------------------------------------------
+% --------------------------------------------------
+% -------------------- ONLINE -----------------------
+% --------------------------------------------------
+% --------------------------------------------------
+%
+% --------------- ENERGY BUDGET ---------------
+%
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.84\linewidth, trim={0cm 5cm 10cm 0cm}, clip]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_ENERGYBUDGET_EDDIES_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Energy budget}}\textbf{|}This table displays energy spectra for \textbf{KEflux}, \textbf{KEfrictionspec}, \textbf{APEflux}, and \textbf{APEgenspec} using parameterizations grouped in Tab.\ref{C5 - TAB - PHASE 1}, these were trained on \textit{UJ5000} and tested on \textbf{eddies online}. Each parameterization spectrum is compared against high-resolution and various low-resolution simulations, including neural networks from \cite{Benchmarking} and analytical parameterizations from \cite{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.
+}
+    \label{APP - ONLINE - PHASE 1 - ENERGY BUDGET -  JETS UNIQUE 5000 and EDDIES ONLINE}
+\end{figure}
+
+\newpage
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.84\linewidth, trim={0cm 5cm 10cm 0cm}, clip]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_ENERGYBUDGET_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Energy budget}}\textbf{|}This table displays energy spectra for \textbf{KEflux}, \textbf{KEfrictionspec}, \textbf{APEflux}, and \textbf{APEgenspec} using parameterizations grouped in Tab.\ref{C5 - TAB - PHASE 1}, these were trained on \textit{UJ5000} and tested on \textbf{jets online}. Each parameterization spectrum is compared against high-resolution and various low-resolution simulations, including neural networks from \cite{Benchmarking} and analytical parameterizations from \cite{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.
+}
+    \label{APP - ONLINE - PHASE 1 - ENERGY BUDGET -  JETS UNIQUE 5000 and JETS ONLINE}
+\end{figure}
+
+%
+% --------------- SIMILARITIES ---------------
+%
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.87\linewidth, trim={0cm 5cm 0cm 0cm}, clip]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_SIMILARITIES_EDDIES_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Similarities}}\textbf{|}This table provides a summary of the Earth mover's distance, reformulated as a similarity metric for various flow quantities represented in either spectral or spatiotemporal domains. A value approaching 1 indicates strong agreement between the distribution obtained from high-resolution simulations and the current observations. Negative values are considered unfavorable, and values lower than -0.5 are disregarded. The tested parameterizations are grouped in Tab.\ref{C5 - TAB - PHASE 1}, they are trained on \textit{UJ5000} and tested on \textbf{eddies online}. For comparison, the results of neural networks \citep{Benchmarking} and analytical parameterizations are also presented \citep{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.}
+    \label{APP - ONLINE - PHASE 1 - SIMILARITIES -  JETS UNIQUE 5000 and EDDIES ONLINE}
+\end{figure}
+
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.87\linewidth, trim={0cm 5cm 0cm 0cm}, clip]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_SIMILARITIES_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Similarities}}\textbf{|}This table provides a summary of the Earth mover's distance, reformulated as a similarity metric for various flow quantities represented in either spectral or spatiotemporal domains. A value approaching 1 indicates strong agreement between the distribution obtained from high-resolution simulations and the current observations. Negative values are considered unfavorable, and values lower than -0.5 are disregarded. The tested parameterizations are grouped in Tab.\ref{C5 - TAB - PHASE 1}, they are trained on \textit{UJ5000} and tested on \textbf{jets online}. For comparison, the results of neural networks \citep{Benchmarking} and analytical parameterizations are also presented \citep{ClosureAnalytical2, ClosureAnalytical51, ClosureDataDrivenZanna}.}
+    \label{APP - ONLINE - PHASE 1 - SIMILARITIES -  JETS UNIQUE 5000 and JETS ONLINE}
+\end{figure}
+
+%
+% --------------- VORTICITY ---------------
+%
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.78\linewidth]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_VORTICITY_EDDIES_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Potential vorticity}}\textbf{|}Visualization of potential vorticity $q$ for both upper (first three rows) and lower (last three rows) layers across different simulation types, indicated at the top of each image. Each image represents the $q$ value spanning the entire computational domain after 10 years of simulations. The objective is to emphasize and visualize simulations that lose their physical relevance, becoming mere pixel grids, and to illustrate the divergence from the high-resolution simulation. Furthermore, the evaluated parameterizations are detailed in Tab.\ref{C5 - TAB - PHASE 1}, they were trained using \textit{UJ5000} and tested on \textbf{eddies online}.}
+    \label{APP - ONLINE - PHASE 1 - VORTICITY -  JETS UNIQUE 5000 and EDDIES ONLINE}
+\end{figure}
+
+\newpage
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.80\linewidth]{figures/results_online/PHASE_1_UNIQUE_JETS_ONLINE_VORTICITY_JETS_ONLINE.png}
+    \caption{\textbf{|}\textcolor{section_color}{\textbf{Online - Phase 1 - Potential vorticity}}\textbf{|}Visualization of potential vorticity $q$ for both upper (first three rows) and lower (last three rows) layers across different simulation types, indicated at the top of each image. Each image represents the $q$ value spanning the entire computational domain after 10 years of simulations. The objective is to emphasize and visualize simulations that lose their physical relevance, becoming mere pixel grids, and to illustrate the divergence from the high-resolution simulation. Furthermore, the evaluated parameterizations are detailed in Tab.\ref{C5 - TAB - PHASE 1}, they were trained using \textit{UJ5000} and tested on \textbf{jets online}.}
+    \label{APP - ONLINE - PHASE 1 - VORTICITY -  JETS UNIQUE 5000 and JETS ONLINE}
+\end{figure}
+
+
+
+
+\input{content/Phase2}
+\input{content/Phase3}
+\input{content/Phase4}
+\input{content/Phase5}
+\input{content/Phase6}
+
+
+
+

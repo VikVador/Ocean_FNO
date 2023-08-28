@@ -1,0 +1,320 @@
+% ------------------------------------------------------------------
+%
+%			                  Ocean subgrid parameterization in an idealized
+%	
+%						       				model using machine learning
+%
+% ------------------------------------------------------------------
+% @ Victor Mangeleer
+% 
+% -------------------------------
+%                   Librairies
+% -------------------------------
+\documentclass[12pt]{article}
+
+\usepackage[margin = 3cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{anyfontsize}
+\usepackage{amssymb}
+\usepackage{enumitem}
+\usepackage{mathtools}
+\usepackage{amsfonts}
+\usepackage{amsmath}
+\usepackage{subcaption}
+\usepackage{fancyhdr}
+\usepackage{hyperref} 
+\usepackage{amsthm}
+\usepackage{physics}
+\usepackage{multicol}
+\usepackage{wrapfig}
+\usepackage{caption}
+\usepackage{lipsum} 
+\usepackage{titlesec}
+\usepackage{float}
+\usepackage{color, colortbl}
+\usepackage{bm}
+\usepackage{tikz}
+\usepackage{makecell} 
+
+% For color boxes
+\usepackage{tcolorbox}
+
+\newcommand{\HRule}{\rule{\linewidth}{0.5mm}}
+\newcommand{\HRulegrossier}{\rule{\linewidth}{1.2mm}}
+\geometry{hmargin = 2.5cm, vmargin = 2cm}
+
+% Column separation ruler
+\setlength{\columnseprule}{0.5pt}
+\def\columnseprulecolor{\color{black}}
+
+\usepackage{tocloft}
+\renewcommand\cftsecafterpnum{\vskip5pt}
+\setlength\cftparskip{8pt}
+
+% -------------------------------
+%                        Font
+% -------------------------------
+% Palatino
+\usepackage{mathpazo}
+
+% -------------------------------
+%               Bibliography
+% -------------------------------
+\usepackage[backend=biber, style=authoryear, natbib=true, sorting=none]{biblatex}
+\addbibresource{references.bib}
+\nocite{*}
+\setlength\bibitemsep{2\itemsep}
+
+% -------------------------------
+%                  FancyHDR
+% -------------------------------
+\usepackage[Lenny]{fncychap}
+\ChNameUpperCase
+\ChNumVar{\fontsize{40}{42}\usefont{OT1}{ptm}{m}{n}\selectfont}
+\ChTitleVar{\Large\sc}
+\pagestyle{fancy}
+
+% Header
+\renewcommand{\headrulewidth}{0pt}
+\fancyhead[C]{} 
+\fancyhead[L]{} 
+\fancyhead[R]{}
+
+% Footer
+\renewcommand{\footrulewidth}{0.1pt}
+\fancyfoot[C]{\thepage}
+\fancyfoot[L]{}
+\fancyfoot[R]{}
+
+% -------------------------------
+%                     Colors
+% -------------------------------
+% Title
+\definecolor{title_color}{rgb}{0.16, 0.28, 0.50}
+
+% Section
+\definecolor{section_color}{rgb}{0.31, 0.38, 0.50} 
+
+% Section
+
+
+% Table rows	
+\definecolor{Gray}{gray}{0.9}
+\definecolor{Blue}{rgb}{0.87, 0.92, 0.96} 
+
+% References color
+\hypersetup{
+    colorlinks,
+    citecolor=section_color,
+    linkcolor=section_color,
+    urlcolor=section_color
+}
+% -------------------------------
+%                 Commands
+% -------------------------------
+%
+% -- Section (Empty for introduction) --
+\newcommand{\sectionemptyTFE}[1]{
+
+    % Main Chapter Header
+    {\Huge \textbf {#1}}
+    \vspace{2mm}
+    \par\noindent\rule{\textwidth}{2.5pt}
+    \par\noindent\rule{\textwidth}{0.5pt}
+    \vspace{1cm}
+}
+
+% -- Section --
+\newcommand{\sectionTFE}[4]{
+
+    % Main Chapter Header
+    {\Huge \textbf{Chapter {#1}}}
+    \vspace{2mm}
+    \par\noindent\rule{\textwidth}{2.5pt}
+    \par\noindent\rule{\textwidth}{0.5pt}
+    \vspace{-8mm}
+    
+    % Title of chapter
+    \section*{\hspace{\parindent}\Large{\textcolor{section_color}{#2}}}
+	\label{#2}
+	\addcontentsline{toc}{section}{#2}
+    \vspace{7mm}
+
+    % Changing section counter
+    \setcounter{section}{#3}
+    \setcounter{subsection}{0}
+    
+    % Overview of the chapter
+    \noindent\textit{#4}
+    \vspace{8mm}
+}
+
+% -- Appendix --
+\newcommand{\appendixTFE}[4]{
+
+    % Main Chapter Header
+    {\Huge \textbf{Appendix {#1}}}
+    \vspace{2mm}
+    \par\noindent\rule{\textwidth}{2.5pt}
+    \par\noindent\rule{\textwidth}{0.5pt}
+    \vspace{-8mm}
+    
+    % Title of chapter
+    \section*{\hspace{\parindent}\Large{\textcolor{section_color}{#2}}}
+	\label{#2}
+	\addcontentsline{toc}{section}{#2}
+    \vspace{7mm}
+
+    % Changing section counter
+    \setcounter{section}{#3}
+    \setcounter{subsection}{0}
+    
+    % Overview of the chapter
+    \noindent\textit{#4}
+    \vspace{8mm}
+}
+
+% -- Sub-Section --
+\newcommand{\subsectionTFE}[1]{
+
+    % Main Chapter Header
+    \subsection{\uppercase{\normalsize{#1}}}
+}
+
+% -- Sub-Sub-Section --
+\newcommand{\subsubsectionTFE}[1]{
+
+    % Main Chapter Header
+    \subsubsection{\uppercase{\normalsize{#1}}}
+}
+
+% -- Double-Columns --
+\newcommand{\doublecolumnsTFE}[5]{
+    \vspace{5mm}
+    \hspace{#3mm}
+    \begin{minipage}{#1\textwidth} % Right column
+        #4
+    \end{minipage} 
+    \hfill
+    \begin{minipage}{#2\textwidth} % Left column
+        #5
+    \end{minipage}
+    \vspace{2mm}
+    \newline % Makes sure it writes under columns
+}
+
+% -- Boxes --
+\newtcolorbox{box_definition}[1]{colback=white, colframe=red!16!green!28!blue!50!, fonttitle=\bfseries,title=#1}
+
+\newtcolorbox{box_phase}[1]{colback=white, colframe=red!16!green!28!blue!50!, fonttitle=\bfseries,title= {\centering #1}}
+
+\newcommand{\partfont}{\fontsize{40}{40}}
+
+%\titleformat{\part}[display]
+ %     {\filcenter}
+  %    {\mbox{}\xrfill[0.4ex]{3pt}[rulecolor]\textsc{\Large \enspace \partname~\thepart}\enspace\xrfill[0.4ex]{3pt}[rulecolor]\mbox{}}{0.3ex} 
+  %   {{\color{Blue}\titlerule[1pt]}\vskip3ex}[\medskip{\color{Blue}\titlerule[1pt]}]%
+%\titlespacing*{\part}{0pt}{10\baselineskip}{2\baselineskip}% * to kill the indentation, [left][before sep][after sep][right]
+
+\titleformat{\part}[display]
+     {\filcenter}
+     {\color{title_color} \partfont \selectfont \textsc{phase}~\thepart}
+     {0pt}
+     {}
+     %[\medskip{\color{title_color}\titlerule[1pt]}]
+\titlespacing*{\part}{0pt}{19\baselineskip}{1\baselineskip}
+
+% ------------------------------------------------------------------
+%								            Document (Start)
+% ------------------------------------------------------------------
+\begin{document}
+
+% -------------------------------
+%                  Front Page
+% -------------------------------
+\begin{titlepage}
+\begin{center}
+
+	% Header
+	\begin{figure}
+    	\includegraphics[width=0.35\linewidth]{figures/Front/ulg.pdf}
+    	\label{fig: Front Page}
+    	\vspace{3.5cm}
+	\end{figure}
+    
+    % Title
+    \vspace{5cm}
+    \HRule \\[0.2cm]
+    \vspace{4mm}
+    \textit{{\LARGE\textcolor{title_color}{Ocean subgrid parameterization}}} \\
+    \vspace{5mm}
+    \textit{\Large{in an idealized model using machine learning}}
+    \vspace{3mm}
+    \\[0.0cm]\HRule
+    \\[2cm]
+    
+    % Authors
+    \begin{minipage}[b]{0.4\textwidth}
+        \begin{flushleft} \large
+        \emph{Author:}\\
+        \textcolor{title_color}{Victor Mangeleer}
+        \end{flushleft}
+    \end{minipage}
+    \begin{minipage}[b]{0.4\textwidth}
+        \begin{flushright} \large
+        \emph{Supervisor:} \\
+        \textcolor{title_color}{Gilles Louppe}
+        \end{flushright}
+    \end{minipage}\\
+	\vspace{30mm}
+
+	% Thesis degree obtained
+    \large{Master thesis completed in order to obtain the degree of}\\
+    \large{Master of Science in Engineering Physics}\\
+    \large{by Mangeleer Victor}\\
+    
+	\vfill
+	
+	% University info
+    \large{\textcolor{title_color}{University of Liège}}\\
+    \vspace{2mm}
+    \large{Faculty of Applied Sciences}\\
+	\vspace{2mm}
+    Academic year 2022--2023
+\end{center}
+\end{titlepage}
+\pagebreak
+
+      
+% -------------------------------
+%                   Introduction
+% -------------------------------
+\pagenumbering{roman}
+\input{content/Chapter_0}
+\newpage
+
+% -------------------------------
+%                Table of content
+% -------------------------------
+\tableofcontents   
+\newpage
+
+% Other chapters
+\pagenumbering{arabic}
+\setcounter{page}{1}
+\input{content/Chapter_1}
+\input{content/Chapter_2}
+\input{content/Chapter_3}
+\input{content/Chapter_4}
+\input{content/Chapter_5}
+\input{content/Chapter_6}
+
+\newpage
+\printbibliography[heading=bibintoc]
+
+\input{content/Appendices}
+
+% ------------------------------------------------------------------
+%								            Document (Start)
+% ------------------------------------------------------------------
+\end{document}

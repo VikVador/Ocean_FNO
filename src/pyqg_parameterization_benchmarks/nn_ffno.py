@@ -16,7 +16,7 @@ import torch
 import torch.nn                                              as nn
 
 # Library used until part 5
-# import fourierflow.FactorizedFourierNeuralOperator._2D_.Base as FFNO_2D
+#import fourierflow.FactorizedFourierNeuralOperator._2D_.Base as FFNO_2D
 
 # Revisited library since part 5 (code re-work for //)
 import fourierflow.FactorizedFourierNeuralOperator._2D_.Base_V4 as FFNO_2D

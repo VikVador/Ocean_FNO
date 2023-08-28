@@ -1,0 +1,146 @@
+% ------------------------------------------------------------------
+%                                              Chapter 3
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{Three}{Neural Networks and Neural Operators}{3}{This chapter aims to introduce the neural networks used throughout this study. These networks fall into two main groups: those performing computations in the spatiotemporal domain and those operating in the frequency domain. Networks from the first group will be briefly introduced, while those from the second group will receive more detailed explanation due to their innovative nature.}
+
+% -------------------------------
+%                    Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Fully convolutional neural network}
+First of all, the initial neural network used is a fully-convolutional neural network (FCNN), designed for image analysis tasks. Indeed, FCNNs are built using convolutional layers that excel at recognizing patterns in visual data like images. Unlike typical convolutional neural networks that end with fully connected layers for classification, they maintain the convolutional structure throughout the network.\\
+
+Convolutional layers in FCNNs retain image details, making them valuable for tasks demanding accurate pixel-level outcomes. As a matter of fact, they are beneficial for tasks like identifying object edges and in domains such as ocean dynamics simulations. In these simulations, FCNNs can predict subgrid process contributions at the pixel level using input snapshots of flow quantities \citep{FCNN1}. The architecture of the FCNN, capabilities, and constraints have been examined deeply in \cite{Benchmarking}. However, opportunities for enhancement remain, as they have not explored the impact of more complex training datasets, which was a matter left for future investigation. Therefore, the first objective consist to improve upon the results presented in their research.
+
+\subsectionTFE{U-Net}
+The \textbf{U-Net}, initially introduced by \cite{unet}, is a notable neural network architecture widely used for image segmentation tasks. Indeed, its distinctive U-shaped design is effective in capturing complex spatial patterns in images. More precisely, the architecture includes a contracting path to understand contextual information, followed by an expanding path for accurate object or region localization. The U-Net has gained a reputation as a leading deep learning architecture \citep{unet_example_1}. Thus, the second objective is to assess the U-Net capabilities compared to the FCNN. This completes our set of two neural networks known for excellence across various applications, while operating in the spatial and temporal domains.\\
+
+Both neural networks are illustrated in Fig.\ref{C3 - FIG - Vizualisation FCNN and UNET} to easily observe and compare their architectures. In addition to that, their configuration used are given in the Tab.
+
+\newpage
+
+\begin{figure}[H]
+	\vspace{-2em}
+    \centering
+    \includegraphics[width=0.97\linewidth]{figures/Chapter_3/FCNN_UNET.pdf}
+    \caption{Vizualisation of the fully-convolutional neural network (FCNN) and U-NET architectures. In the figure, \textbf{CAT} means the concatenation of the inputs along the batch dimension.}
+    \label{C3 - FIG - Vizualisation FCNN and UNET}
+\end{figure}
+
+\newpage
+
+\subsectionTFE{Fourier Neural Operators}
+
+The Fourier Neural Operators (FNO) provide an innovative approach to solving complex partial differential equations, perfect examples of equations are Eq.\ref{C2 - EQ - Mass conservation law}, \ref{C2 - EQ - Momentum conservation law} and \ref{C2 - EQ - Energy conservation law}, by combining the capabilities of neural networks with Fourier analysis \cite{FNO}. These operators address the limitations of conventional solvers and introduce a way to model mappings between infinite-dimensional function spaces.\\
+
+\begin{wrapfigure}[25]{r}{.52\linewidth}
+	\vspace{-1em}
+    \centering
+    \resizebox{\linewidth}{0.75\linewidth}{\input{figures/Chapter_3/fourier_representation}}
+    \caption{Illustration of the link between spacetime and frequency domains. On the right, the input signal, with varying amplitude over time, can be broken down into the sum of two basic signals (middle). In the frequency domain, its representation consists of two peaks whose amplitude corresponds to the amplitude of the basic signals. These peaks are observed at a specific oscillation frequency $\omega$.}
+    \label{C3 - FIG - Fourier Analysis}
+\end{wrapfigure}
+
+First of all, \textbf{Fourier analysis} is a mathematical technique used to understand and break down complex patterns or signals into simpler components. It reveals the underlying structure of a signal by showing how much different frequencies contribute to it.  As a puzzle that can be assembled from smaller pieces, any complex signal can be thought of as being made up of different piece with various frequencies.\\
+
+Hence, Fourier analysis allows to identify these pieces and their strengths, helping make sense of the original pattern. This technique has applications in various fields, from understanding sound and images to solving scientific and engineering problems that involve waves and oscillations. An illustration of the application of Fourier analysis to a complex signal is depicted in Fig.\ref{C3 - FIG - Fourier Analysis}.\\
+
+\vspace{-0.6em}
+
+As mentioned earlier, the main idea behind the Fourier neural Operator is to establish a mapping between infinite-dimensional function spaces. To illustrate this somewhat complex notion, one can imagine addressing a challenge like predicting temperature distribution on a wall surface based on position coordinates (x, y). One solution could be to use a conventional neural network to learn this relationship, connecting input coordinates to output temperatures. Nevertheless, this approach proves to be effective only for specific instances of the problem, i.e. if the data was generated using constant conditions like uniform thermal conductivity or a purely vertical temperature gradient.\\
+
+The Fourier neural operator introduces a more profound perspective. Instead of focusing solely on predicting outputs from inputs, it considers the broader context. As a matter of fact, it acknowledges that there exists a function to describe the initial state of the system and another function to represent how the system evolves over time. Both of these functions are defined over infinite-dimensional spaces meaning that, there exist an infinite number of ways of formulating this function that would give the same mapping.
+
+\newpage
+
+As a matter of fact, the FNO aims to learn the very equation that governs the system behavior. This marks a departure from traditional neural networks, which often specialize in particular scenarios. With the Fourier neural operator, the underlying physics or equations become the target of learning. In other words, this means that even if the conditions change, such as altering thermal conductivity or other physical parameters, the neural network has the potential to adapt because it is effectively learning the fundamental relationships.For fluid dynamics, it will focus on learning the governing simplified Navier-Stokes equation regardless of the parameters used to impose the physics of the flow.\\
+
+\subsubsectionTFE{The architecture}
+
+The flow of input through the Fourier Neural Operators can be described as follows:
+
+\begin{itemize}
+	\item \textbf{Domain transformation}: Instead of discrete indices (i, j), the FNO uses real coordinates (x, y) for continuous domain representation. Real coordinates align naturally with real-world situations and provide intuitive interpretations for variables like positions, temperatures, etc. . Unlike indices tied to specific grid sizes, real coordinates offer flexibility for various resolutions, crucial for accuracy and efficiency. They also encourage generalization across scenarios, enabling architecture and weight reuse. This adaptability enhances the neural operator efficiency and effectiveness.
+	
+	\vspace{1em}	
+	
+	\item \textbf{Projection} : In the second step, the input, now represented as the continuous function $a(x, \ y)$ in $\mathbb{R}^{X \times Y \times 1}$, undergoes projection into a higher-dimensional space. Here, $x$ and $y$ exist in $\mathbb{R}$, with $X$ as the number of grid points along the x-direction, and $Y$ for the y-direction. Indeed, this projection takes the input from the two-dimensional plane to a space with more dimensions which enriches the original input, capturing more intricate relationships.\\
+	
+In particular, this increased complexity in the higher-dimensional space enhances the neural operators understanding of the input patterns and features. In simpler terms, the projection extends the input information by examining it from various perspectives in this expanded space which allows the neural operators to extract more detailed information. From now on, the input is mathematically written as $v(x, y) \in \mathbb{R}^{X \times Y \times H}$ with $H$ the size of this latent space on which the initial input is projected.\\
+	
+It is important highlighting that the \textbf{projection is performed pixel-wise} using a simple single-layer feedforward network. This approach treats each input point independently, making the projection unaffected by the grid size which ensures the neural operators effectiveness across various input resolutions. Furthermore, by handling pixels individually, the neural network can learn versatile patterns not tied to a single problem. This enables the network to extract useful features applicable to a range of problems, enhancing its adaptability to new tasks.
+
+\newpage
+
+	\item \textbf{Fourier layer} : The computations performed can be separated in two different computational path:
+	
+	\begin{enumerate}
+		\item \textbf{Frequency Domain}: In this first step, the input signal $v(x, \ y)$ undergoes a 2D Fourier transform, this process breaks down and extracts the frequency components of the original input. These components, often referred to as \textit{modes}, make up the decomposed signal. Each of these modes has contributions in both the x and y directions and the total number of modes, in a specific direction, equals the resolution of the image in the corresponding direction. As explained previously, the signal is represented as a sum of terms but it is important to noticte that the initial term in the series holds the strongest influence over the signal. Indeed, as one moves deeper into the terms, their impact diminishes. In other words, the first Fourier modes represent signals with larger amplitudes and lower frequencies. In the context of fluid simulations, this low-frequency content in spacetime corresponds to the contribution of large eddies in turbulent flows to the overall dynamics. Whereas, higher mode values are linked to high-frequency content, representing smaller eddies with rapid motion and evolution.\\
+		
+After applying the 2D Fourier transform, a low-pass filter is used on the frequency content, selecting only certain modes from the lowest range. The primary goal is to train the neural network to capture information from the global input pattern. As an example, the neural operator can learn from 64x64 resolution fluid flow snapshots to predict energy corrections while focusing on the initial 8 modes out of the available 64. This approach ensures versatility: when correcting a 32x32 simulation, the neural operator can generalize because the first 8 modes are available to both resolutions. Another example, if time limits allow creating only a vast 64x64 dataset for training, the neural operator remains afterwards useful for refining higher-resolution simulations, like 128x128. Once again, this is possible due to its training in making corrections while considering the broader flow pattern.\\
+
+Now, one can finally witness core concept of the Fourier neural operator, the retained modes of the original input are convolved to derive the output frequency content. The clear advantage lies in conducting this convolution in the frequency domain. Indeed, from a mathematical point of view, performing convolution between an input and a given kernel is computationally intensive in the space-time domain, while in the frequency domain, it simplifies to a product between the two. The kernel, represented as a matrix of weights denoted as $R \in \mathbb{C}^{H \times H \times M}$ with $M$ the number of modes kept, responsible for multiplying the residual frequency spectrum of the original input, is learned by the neural operator during training. Each Fourier layer possesses its individual weight set and from it the output spectrum is derived, an inverse Fourier transform is used to obtain the output space-time representation.
+
+	\item \textbf{Space time domain} : In this second step, the input signal $v(x, y)$ undergoes a simple linear transformation using a pixel-wise 2D convolution.
+
+	\end{enumerate}
+
+
+\newpage
+	
+Lastly, the transformed inputs are combined, and if the Fourier layer is not the final one, the result is subjected to a \textit{GeLU} activation function.
+	
+	\item \textbf{Back projection}: At the last Fourier layer, each pixel is individually transformed to the intended output dimension through two separate single-layer feedforward networks. The first network is used to facilitate the transition between the latent space and an intermediate space of fixed size 128, followed by the second network that creates the transition from this space to the final target dimension. Ultimately, the final output is mathematically represented as $u(x, \ y) \in \mathbb{R}^{X \times Y \times O}$, where $O$ denotes the target output dimension.
+\end{itemize}
+
+\subsectionTFE{Factorized Fourier Neural Operators}
+
+The Factorized Fourier Neural Operator (FFNO), as introduced by \cite{FFNO}, presents an enhanced architecture derived from the original Fourier Neural Operator. Notably, the key improvements comes from modifications within the Fourier Layer:
+
+\begin{itemize}
+	\item The 2D Fourier transform is applied to extract individually the modes along the x-direction and y-direction. Subsequently, each set of modes is convolved with its dedicated weight matrix ($R_x$ and $R_y$), both of which the Neural Operator has to learn.
+	
+	\item Eventually, the outputs, corresponding respectively to distinct part of the truncated frequency spectrum (as in FNO), are transformed back to the spacetime domain and then added to one another.
+	
+	\item The result then flows through a feedforward network composed of a single-layer feedforward network followed by a dropout, \textit{ReLU} activation (unless it's the final Fourier layer) and a layer normalisation.
+	
+	\item The original input is added to the feedforward network output to act as a skip connection, this combined result exits the Fourier Layer.
+
+\end{itemize}
+
+Alongside this updated Fourier layer design, the inclusion of shared weight matrices $R_x$ and $R_y$ was introduced. This choice slightly impacts model accuracy while significantly reducing the overall number of trainable parameters in the final Neural Operator. Also, the original FNO faced a scaling problem: using more than 4 Fourier layers led to poor training and results. The adjustment made regarding the residual connections enabled the Neural Network to scale effectively, accommodating up to 24 Fourier layers. The Fourier Neural Operator and the Factorized Fourier Neural Operator, like the initial two neural networks, are depicted in Figure X.\\
+
+\textbf{Note}: The FFNO architecture will be studied in more depth compared to the others, which requires memory-intensive training. As a result, training the neural network needed multiple GPUs. However, the architecture code was incompatible with parallel execution due to its use of (torch) \textit{nn.ParameterList}. Hence, I reworked the code to make parallel training possible and also developed my own FourierFlow library that includes both FNO and FFNO architectures. If you're interested in trying them out, feel free to check:
+
+\begin{center}
+\href{https://github.com/VikVador/FourierFlow}{https://github.com/VikVador/FourierFlow}
+\end{center}
+
+
+\newpage
+
+\begin{figure}[H]
+	\vspace{-2em}
+    \centering
+    \includegraphics[width=0.97\linewidth]{figures/Chapter_3/FNO_FFNO.pdf}
+    \caption{Vizualisation of the Fourier Neural Operator (FNO) and Factorized Fourier Neural Operator (FFNO) architectures. In the figure, \textbf{ADD} means the addition of the inputs along the batch dimension.}
+    \label{C3 - FIG - Vizualisation FNO and FFNO}
+\end{figure}
+
+\newpage
+
+%\input{tableaux/phase3}
+
+
+
+
+
+
+

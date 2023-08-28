@@ -89,7 +89,7 @@ if __name__ == '__main__':
         '--learning_rate',
         help = 'Initial value of the learning rate used during training (it changes with scheduler)',
         type = float,
-        default = 0.01)
+        default = 0.001)
 
     parser.add_argument(
         '--batch_size',
@@ -108,8 +108,8 @@ if __name__ == '__main__':
         '--scheduler',
         help = 'Name of the scheduler used during training',
         type = str,
-        choices = ["constant", "multi_step", "exponential", "cosine", "cosine_warmup_restart", "cyclic"],
-        default = "constant")
+        choices = ["constant", "multi_step", "exponential", "cosine", "cosine_warmup_restart", "cyclic", "default"],
+        default = "default")
 
     parser.add_argument(
         '--configuration',

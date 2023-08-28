@@ -1,28 +1,9 @@
-# Parameters to explore        
-modes_low_pass  = [(0, 8),  (0, 16), (0, 24), (0, 32)]
-modes_pass_band = [(8, 16), (16, 24), (24, 32)]
-modes           = modes_low_pass + modes_pass_band
-width           = [32, 64, 128]
-layers          = [4, 8, 12, 16, 20, 24]
-weights         = [True]   
-
-# Total number of combinations possible (here 48 in total)
-total_comb = len(modes) * len(width) * len(layers) * len(weights)
-
-for we in weights:
-    for w in width:
-        for l in layers:
-            for m in modes:
-
-            	# ...
-
-
 C0 - Width = 32 / Layers = 4 / Modes = (0, 8)
 C1 - Width = 32 / Layers = 4 / Modes = (0, 16)
-C2 - Width = 32 / Layers = 4 / Modes = (0, 24)
 C3 - Width = 32 / Layers = 4 / Modes = (0, 32)
 C4 - Width = 32 / Layers = 4 / Modes = (8, 16)
 C5 - Width = 32 / Layers = 4 / Modes = (16, 24)
+C2 - Width = 32 / Layers = 4 / Modes = (0, 24)
 C6 - Width = 32 / Layers = 4 / Modes = (24, 32)
 C7  - Width = 32 / Layers = 8 / Modes = (0, 8)
 C8  - Width = 32 / Layers = 8 / Modes = (0, 16)
@@ -59,8 +40,6 @@ C38 - Width = 32 / Layers = 24 / Modes = (0, 32)
 C39 - Width = 32 / Layers = 24 / Modes = (8, 16)
 C40 - Width = 32 / Layers = 24 / Modes = (16, 24)
 C41 - Width = 32 / Layers = 24 / Modes = (24, 32)
-
-
 C42 - Width = 64 / Layers = 4 / Modes = (0, 8)
 C43 - Width = 64 / Layers = 4 / Modes = (0, 16)
 C44 - Width = 64 / Layers = 4 / Modes = (0, 24)
@@ -103,8 +82,6 @@ C80 - Width = 64 / Layers = 24 / Modes = (0, 32)
 C81 - Width = 64 / Layers = 24 / Modes = (8, 16)
 C82 - Width = 64 / Layers = 24 / Modes = (16, 24)
 C83 - Width = 64 / Layers = 24 / Modes = (24, 32)
-
-
 C84 - Width = 128 / Layers = 4 / Modes = (0, 8)
 C85 - Width = 128 / Layers = 4 / Modes = (0, 16)
 C86 - Width = 128 / Layers = 4 / Modes = (0, 24)

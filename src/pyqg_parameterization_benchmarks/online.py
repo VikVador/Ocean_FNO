@@ -288,7 +288,6 @@ if __name__ == '__main__':
             except:
                 raise
 
-
             # Save results for later use
             online_results.to_netcdf(path + "/dataset_LR.nc")
 

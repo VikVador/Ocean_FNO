@@ -1,0 +1,464 @@
+% ------------------------------------------------------------------
+%                                                 Chapter 5
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{Five}{The story of the results}{5}{This chapter provides a comprehensive overview of the research methodology, covering the setup details and metrics used for model evaluation. The results will be presented in six distinct phases to enhance clarity and emphasize key findings.}
+
+
+% -------------------------------
+%                    Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+
+\subsectionTFE{Methodology and Setup}
+\subsubsectionTFE{Baselines}
+To evaluate the performance of a newly learned parameterization, a comparison against baseline models is essential. Thus, the three different configurations of the ~fully convolutional neural network introduced in the work of \cite{Benchmarking} will serve as baselines, as they represent their best results achieved. Each of these models was trained on a dataset containing 5000 samples from a single eddy-driven simulation (\textit{UE5000}, as shown in Tab.\ref{C4 - FIG - Vizualization of an eddy and jet flow}), during 50 epochs. The input for all networks is the potential vorticity $q$, and each network outputs one of the formulations of the subgrid term (as described by Eq.\ref{C2 - EQ - Total subgrid forcing}, \ref{C2 - EQ - Subgrid forcing of non-linear advection}, \ref{C2 - EQ - Subgrid fluxes}). These neural networks will be used for both offline and online testing. Additionally, beyond aiming to improve upon their results, it is important to verify whether using their architecture and the same dataset while sampling differently produces consistent results, providing reassurance regarding our setup.\\
+
+In addition to these neural network models, several well-known analytical parameterizations from the world of turbulence closure modeling, including the one proposed by \cite{ClosureDataDrivenZanna}, have also been included in the comparison. However, they will solely serve as baselines for the online testing phase. This decision is based on practical reasons: introducing these parameterizations would significantly increase the number of experiments and extend the already substantial computation time required for the extensive set of experiments already prepared. Furthermore, while integrating these parameterizations into their benchmark framework \citep{Benchmarking} was relatively straightforward for online testing, the same ease did not apply to the offline testing phase.\\
+
+The first parameterization under consideration is the one of Smagorinsky \citep{ClosureAnalytical2}, a widely used turbulence closure model in numerical weather modeling. This approach estimates unresolved turbulent stresses by introducing an eddy viscosity term determined by the resolved flow variables, specifically the derivatives of the velocity fields. The model incorporates a constant parameter known as the Smagorinsky coefficient $C_S$, which plays a crucial role in establishing the eddy viscosity.
+
+\newpage
+
+Although computationally efficient, the model accuracy can be influenced by the chosen Smagorinsky coefficient and might not comprehensively capture intricate turbulent flows. By taking into account the approach used by \cite{Benchmarking}, the $C_S$ value is set at 0.15 for this study.\\
+
+Before introducing the second parameterization, it is crucial to understand an important concept related to geostrophic turbulence. Indeed, this turbulence drives the transfer of enstrophy (measure of the magnitude of vorticity squared) to smaller scales, as outlined by \cite{charney1971geostrophic}.\\ 
+
+As an example, when one talks about geostrophic turbulence transferring enstrophy to smaller scales, it means that as the turbulence occurs, this swirling motion gets distributed to smaller and smaller regions within the fluid. Another way to think about this, one can imagine stirring a cup of coffee with a spoon. The swirling motion created initially is like the enstrophy, and if one keeps stirring, that swirling motion gets spread out throughout the coffee, especially in smaller whirlpools. Similarly, in geostrophic turbulence, the spinning or swirling energy gets spread to smaller areas within the fluid.\\
+
+Therefore, in a numerical simulation, managing enstrophy dissipation near the grid-scale is essential to prevent its accumulation. To address this, a common strategy involves using a horizontal hyper-viscosity, frequently biharmonic, i.e. an additional term of fourth order is added to the partial differential equations describing the flow. This viscosity selectively dissipates enstrophy near the grid-scale, much like the Smagorinsky approach. However, a complication arises at resolutions close to the scale where smaller eddies emerge. In such cases, these closures not only dissipate enstrophy but also a notable portion of the total energy. This is problematic since geostrophic turbulence channels energy to larger scales while transferring enstrophy to smaller scales. Hence, an ideal parameterization should prioritize enstrophy dissipation without dissipating energy at small scales.\\
+
+To tackle this issue, \cite{ClosureAnalytical51, ClosureAnalytical52} proposed a novel approach introducing a class of subgrid parameterizations that dissipate enstrophy while preserving most of the energy. The method involves combining a standard hyperviscous closure (ensuring enstrophy dissipation) with a mechanism to return the dissipated energy back to the resolved flow at larger scales which they called backscaterring. By redirecting the energy to larger scales, this parameterization maintains a more realistic energy cascade, resulting in more energetic eddy fields. Their parameterization, that will be named Backscatter and Biharmonic Dissipation, has two hyper-parameters, $C_B$ (fraction of Smagorinsky-dissipated energy scattered back to larger scales) and $C_S^2$ (dissipation constant), which are respectively set to 1.2 and 0.007. Once again, this choice is based on the results obtained in \cite{Benchmarking}.\\
+
+Lastly, the final parameterization used as a baseline is the one obtained from data using relevance vector machine with an idealized primitive equation model presented in \cite{ClosureDataDrivenZanna}. The set of weights used is the one derived from their human-in-the-loop technique during the regression process. If the reader is seeking more detailed explanations about these three analytical expressions, they can be found in the appendix $a$, $b$ and $c$ of the work by \cite{Benchmarking}.
+
+\vspace{0.4em}
+\subsubsectionTFE{Investigated Architectures}
+
+In total, four neural networks were tested extensively throughout this work. Indeed, the first one is the \textbf{fully convoslutional neural network}, the purpose is to improve upon the best results obtained in \cite{Benchmarking}. Additionally, a \textbf{U-NET}, a state-of-the-art model for convolution operations on spatiotemporal data, is included. Furthermore, the first \textbf{Fourier Neural Operator} (FNO) and its improved architecture called the \textbf{Factorized Fourier Neural Operator} (FFNO) are also tested. The latter two networks operate primarily in the spectral domain, making it interesting to compare their results with the first two networks operating in the original space-time data representation.\\
+
+A detailed visualization of all these networks is provided in Fig. \ref{C3 - FIG - Visualization FCNN and UNET} and \ref{C3 - FIG - Visualization FNO and FFNO}. Additionally, comprehensive documentation detailing the network architecture parameters settings is available in the code library associated with this thesis, which will be accessible at the end page of this work. Specifically, within the file \textit{neural\_networks.py}, one can find the configurations for all these networks along with the corresponding values used.\\
+
+It is important to note that, to ensure a fair comparison, each of these neural networks has a similar number of trainable parameters, roughly around 300,000. These parameter configurations will remain consistent from phase one to five of this study. However, a thorough analysis of the FFNO architecture will be conducted in phase six, with each tested combination documented comprehensively to provide clarity on the choices made.
+
+
+
+\vspace{0.4em}
+\subsubsectionTFE{Inputs}
+
+The input, in the case where only one flow field variable is used,  is represented by a 2-dimensional matrix with dimensions $N \times N$, where $N = L/\Delta \mathrm{x}$, and $L$ denotes the domain size while $\Delta \mathrm{x}$ refers to the spatial resolution. The possible flow field variables that can serve as inputs include the horizontal velocity $u$, vertical velocity $v$, and potential vorticity $q$. Additionally, any combination of these variables can be provided as input. However, for the sake of consistency and to manage the number of configurations efficiently, the possible test cases were limited to the following combinations: 
+
+\vspace{0.2em}
+\begin{equation}
+q, \ (q, \ u), \ (q, \ v), \  (q, \ u, \ v)
+\label{C5 - EQ - Inputs combinations}
+\end{equation}
+
+\subsubsectionTFE{Outputs}
+
+The output of the parameterization can be one of three possible formulations: the \textbf{total subgrid forcing} $S_{q_{\textit{tot}}}$ (see Eq. \ref{C2 - EQ - Total subgrid forcing}), the \textbf{subgrid forcing of potential vorticity} $S_{q}$ (see Eq. \ref{C2 - EQ - Subgrid forcing of non-linear advection}), and the \textbf{subgrid flux} $\mathbf{\Phi}_q$ (see Eq. \ref{C2 - EQ - Subgrid fluxes}). Although these formulations are highly correlated, only the last one of them ensures that the conservation law is respected. Indeed, when the neural network is trained to predict the subgrid flux, the divergence operation is numerically and internally computed by $PyQG$ afterwards.\\
+
+Ensuring the conservation law is respected is of great importance. In the first two configurations, there is no guarantee that the neural network will predict a quantity resulting from the divergence of another.
+
+\newpage
+
+Nevertheless, the divergence operator serves a crucial role in diffusing physical quantities, smoothing out information and preventing localized accumulation. Simulations that do not adhere to conservation laws can exhibit unpredictable behavior, potentially leading to energy peaks, simulation instability, and divergence due to energy explosions.\\
+
+For the first two subgrid term formulations, \cite{Benchmarking} discovered that ensuring the output of the last layer has a zero mean significantly improved offline results and stabilized online simulations. Consequently, this operation will be applied to the output when the neural network uses either of the first two formulations. However, this feature will be turned off for the conservative formulation.\\
+
+Lastly, it is important to note that when the chosen formulation is the subgrid flux $\mathbf{\Phi}_q$, the neural network outputs not one but two values. Specifically, it calculates the subgrid flux values in both the x- and y-directions. Therefore, during offline tests, the mean squared error (MSE) is calculated individually for both of these quantities. However, for simplicity, as in \cite{Benchmarking}, the resulting MSE error discussed throughout this work concerning the subgrid flux is the average of the MSE errors computed for both quantities separately.\\
+
+\subsubsectionTFE{Datasets}
+
+The datasets used for training the neural networks in each phase, along with their respective short names, are summarized in Tab.\ref{C4 - TAB - DATASETS}. The summarizing table of offline results for each phase also includes the short name of the corresponding dataset used. In addition to the training datasets, six additional datasets to evaluate the quality of our parameterizations were created.\\
+
+For offline testing, three datasets are used each composed of samples of: eddy-driven flows (\textbf{eddies offline}),  jet-driven flows (\textbf{jets offline}), and another dataset containing samples from both flow types (\textbf{full offline}). Each of these datasets consists of 5000 samples collected from 10 different simulations (with 5 from each type in the full offline dataset). Additionally, three datasets for online testing were also created: eddy-driven (\textbf{eddies online}), jet-driven (\textbf{jets online}), and samples from both flow types (\textbf{full online}). However, by contrast to the offline datasets, they not only include subgrid scale processes values but also contains the energy spectrum of the flow, values at each timestep of all flow quantities, and more.
+
+\subsubsectionTFE{Training}
+The training conditions used remain consistent with those described in \cite{Benchmarking}. Specifically, the batch size is set at 64 samples, the learning rate ($\gamma$) is equal to 0.001, the optimizer is ADAM, and the scheduler is multi-step with milestones set at (4/8), (6/8), and (7/8) of the training. The number of epochs is 50, and the loss function used is the mean squared error between the predicted subgrid scale process contribution and its true value. In phase 5, we will dive deeper into exploring the FFNO prediction capabilities by testing various combinations of training setups. These combinations and their descriptions will be presented accordingly in phase 5.
+
+
+
+
+
+
+\newpage
+
+\subsectionTFE{Metrics}
+
+To assess the quality of the newly learned parameterization, a benchmarking framework was developed by \cite{Benchmarking}. This framework enables us to evaluate the parameterization performance through various testing methods.
+
+\subsubsectionTFE{Offline}
+
+Offline metrics serve the purpose of assessing how well the parameterization predicts its target. For each fluid layer, like the upper and lower layers shown in Fig.\ref{C2 - FIG - Two-layers quasigeostrophic flow model}, two metrics are used. The first metric is the \textbf{coefficient of determination} $R^2$, expressed as:
+
+\vspace{0.3em}
+\begin{equation}
+R^2 = 1 - \frac{\mathbb{E}\left[(S - \hat{S})^2\right]}{\mathbb{E}\left[(S - \mathbb{E}[S])^2\right]}
+\label{C5 - EQ - Coefficient of determination}
+\end{equation}
+\vspace{0.2em}
+
+Here, $S$ represents the exact subgrid scale contribution, $\hat{S}$ is the prediction made by the parameterization, and $\mathbb{E}$ stands for statistical expectation. This metric interpretation is simple: it yields a value of 1 for perfect predictions, 0 when predictions are no better than always guessing the mean, and negative values when predictions are worse than guessing the mean. The second metric is the \textbf{Pearson correlation} $(\rho)$, given by:
+
+\vspace{0.3em}
+\begin{equation}
+\rho = \frac{\operatorname{Cov}(S, \hat{S})}{\sigma_S \sigma_{\hat{S}}}
+\label{C5 - EQ - Pearson}
+\end{equation}
+\vspace{0.2em}
+
+Here, $\sigma$ represents the empirical standard deviation of a quantity across the dataset. Pearson correlation varies between -1 and 1 and can remain high even if $R^2$ is negative. For example, if predictions consistently have a wrong but proportional scaling factor. To compute these metrics, the procedure is straightforward: at each time step, the metric value is calculated for each pixel and then averaged. The final results are obtained by averaging these values across all time steps.
+
+\vspace{0.2em}
+\subsubsectionTFE{Online}
+
+The online metric serves the purpose of evaluating the parameterization performance in real-time simulations. The approach involves conducting low-resolution simulations and applying the parameterization at each time step to correct the simulation. Then, various metrics can be calculated on these simulations to determine if they exhibit meaningful physical behavior and whether they align with the results of high-resolution simulations that share the same initial and boundary conditions.\\
+
+It is crucial to note that achieving good results in the offline phase does not necessarily guarantee success in practical scenarios. The benchmarking framework possess various metrics to assess the quality of the newly developed parameterization. However, using all of these metrics would generate a vast amount of data that could be too time consuming (alone) to analyze.
+
+\newpage
+
+Therefore, the selected metrics for evaluation are:
+
+\begin{itemize}
+	\item \textbf{Spectrum analysis}:  For energy-related flow quantities, it is possible to extract and examine their power spectrum in spectral space. This allows us to see the contributions from different scales in the spectrum. The goal is to determine whether the spectrum of a low-resolution simulation, corrected with a parameterization, matches that of the high-resolution simulation. The specific quantities of interest are:
+	
+\begin{spreadlines}{2em}
+\begin{enumerate}
+	\item \textbf{KEflux} (Kinetic Energy Flux): This reveals how kinetic energy is being transferred across different lengthscales.
+	\item \textbf{KEfrictionspec} (Friction Energy Spectrum): Indicates the amount of energy lost due to bottom drag, occurring between fluid layers or at the ocean floor, for each lengthscale.
+	\item \textbf{APEflux} (Available Potential Energy Flux): Measures the potential energy available for transfer between different lengthscales.
+	\item \textbf{APEgenspec} (New Available Potential Energy Spectrum): Represents the newly generated potential energy at each lengthscale.
+\end{enumerate}
+\end{spreadlines}
+
+While these metrics might seem complex, the main focus should be on one key idea: these metrics capture different aspects of how energy moves within a fluid, which is essential for defining flow dynamics. If one observes matching spectra between simulations, it confirms that the parameterization is effectively redistributing and addressing energy deficiencies in the simulation. These four metrics can be computed for both layers of the simulation, but for clarity, only the spectrum for the first layer will be presented (this is an arbitrary choice for the sake of conciseness).
+
+	
+\item \textbf{Differences between time-averaged power spectra and fluxes}: While spectrum analysis provides a useful visual tool, it is also valuable to quantitatively measure the differences between power spectra. This can be accomplished by calculating the differences between time-averaged power spectra and fluxes. To compute this difference, let $f$ represent the power spectrum curve of a specific quantity. The spectral difference can be calculated as follows:
+
+\begin{equation}
+\operatorname{spectral}\_\operatorname{diff}(\operatorname{sim} 1, \operatorname{sim} 2 ; f) \equiv \sqrt{\frac{1}{|\mathcal{K}|} \sum_{k \in \mathcal{K}}\left(f_{\operatorname{sim} 1}(k)-f_{\operatorname{sim} 2}(k)\right)^2}
+\end{equation}
+
+Here, $\mathcal{K}$ represents a set of isotropic wavenumbers common to both simulations. In our case, $\mathcal{K}$ is evenly distributed in logarithmic space and covers up to 2/3 of the Nyquist frequency of the low-resolution simulation, as described in \cite{Benchmarking}.
+
+\vspace{0.2em}
+\item \textbf{Differences between spatially flattened probability distributions}: Even if the energy spectrum appears satisfactory, it does not necessarily mean that the dynamics represented by the corrected low-resolution simulation will match those of the high resolution. Hence, it is valuable to compute the empirical distributions of various flow quantities at the end of the simulation. 
+
+\newpage
+
+This can be done using the earth mover's distance (or, in other words, the Wasserstein distance with a p value set to 1):
+
+\vspace{0.2em}
+\begin{equation}
+\operatorname{distrib}\_\operatorname{diff}(\operatorname{sim} 1, \operatorname{sim} 2 ; f)  \equiv \int_{-\infty}^{\infty}\left|P_{\operatorname{sim} 1}(f \leq x)-P_{\operatorname{sim} 2}(f \leq x)\right| \, dx
+\label{C5 - EQ Distributions }
+\end{equation}
+\vspace{-0.1em}
+
+Here, $P_{\operatorname{sim}}(f \leq x)$ represents the cumulative distribution function of quantity f in a given simulation. Imagining the two probability density functions as mounds of earth, this metric corresponds to the minimum amount of work required to move all the mass from one mound to the other. For 1-dimensional distributions, it reduces to the integral of the difference in each cumulative distribution function (which we empirically approximate). These differences are calculated for the quasi-steady-state distributions (marginalized over space and at the final timestep) of u, v, q, kinetic energy density, and enstrophy int the first layer (once again, this a choice for conciseness).
+
+It is important to notice that when comparing low-resolution to high-resolution metrics, we are comparing the distributions of quantities like $u$ (solution of the high-resolution) and $\bar{u}$ (solution of the low-resolution), so histograms are properly normalized, as outlined in \cite{Benchmarking}.
+	
+	\vspace{0.3em}
+\item \textbf{From difference to similarity}: Defining various distance metrics can lead to challenges when comparing them, especially due to differences in units. However, the actual value of a metric is not the main concern. What matters is whether the result for parameterized simulations line up to the one of high-resolution simulations more than a simple low-resolution simulation. To address this, the distance metrics are transformed into similarity scores, indicating how close parameterized models are to both type of simulations:
+
+\vspace{0.2em}
+\begin{equation}
+\text { Similarity }(\text { param, high-res; diff }) \equiv 1-\frac{\operatorname{diff}(\text { param, high-res })}{\operatorname{diff}(\text { low-res, high-res })}
+\end{equation}
+\vspace{-0.1em}
+
+This similarity score is approximately 1 if the parameterized model distance to a high-resolution is much smaller than that of the low-resolution model (and exactly 1 for the high-resolution model), approximately 0 if this distance is about the same as the low-resolution model (and exactly 0 for the low-resolution model), and less than 0 if the distance is larger.
+
+	
+\vspace{0.3em}
+\item \textbf{A simple but meaningful visualization}: While numerical metrics provide insight, observing potential vorticity distribution offers another way to assess the parameterization quality. For the final time step of the simulation, we will present potential vorticity plots for high-resolution, low-resolution, neural networks, analytical baselines, and our parameterizations. This practical assessment complements the other rigorous metrics. After all, a good graphic can often speak volumes, don't you think?
+ 
+\end{itemize}
+
+\newpage
+
+
+%------------------------------------------
+%
+%								       PHASE 1
+%
+%------------------------------------------
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 1}
+\end{center}
+\vspace{0.15cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+\addcontentsline{toc}{subsection}{5.3 \vspace{0.2em} RESULTS}
+	
+In this first phase, the neural networks are trained using a single flow simulation consisting of 5000 samples (\textit{UE5000} and \textit{UJ5000}). The idea is to train them under the same conditions as those in \cite{Benchmarking} to detect any potential differences in results.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+First and foremost, it is clear that our baseline neural networks, using identical architectures, training conditions, and simulations but with varied sampling, already show a difference. Specifically, the offline results of the FCNN trained on \textit{UE5000} exhibit a reduction of 3\% to 6\% in $\rho$ and $R^2$ measurements for both layers.\\ 
+
+A recurring observation is that for all architectures trained on \textit{UE5000}, the offline results excel on the eddies offline dataset (not shown) but perform poorly on the jets online datasets, leading to negative $R^2$ scores. However, when trained on \textit{UJ500}, neural networks tend to perform slightly worse on the eddies offline dataset but slightly better on the jets offline. In other words, the results are polar opposites in the first scenario, while in the second scenario, both results are unsatisfactory.\\
+
+Whatever the situation, it is evident that predicting the subgrid flux $\mathbf{\Phi}_q$ consistently yields the best results, and this is also true when neural network inputs combine potential vorticity and velocity fields. The Tab.\ref{C5 - TAB - PHASE 1} provides the best results for each architecture type.\\ 
+
+The most intriguing observation is that the FFNO, whether trained on eddies or jets, achieves a positive $R^2$ in the lower layer when tested on jet-type flows. This contrasts with the baseline parameterizations, in their study \citep{Benchmarking}, they struggled to find a neural network parameterization that achieved positive results in this specific layer.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+The energy spectrum, visible in Fig.\ref{APP - ONLINE - PHASE 1 - ENERGY BUDGET - JETS UNIQUE 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 1 - ENERGY BUDGET - JETS UNIQUE 5000 and JETS ONLINE}, shows differences between FCNN and UNET. Indeed, the FCNN fails to capture the kinetic energy flux spectrum, while the U-NET aligns better with the high-resolution simulation spectrum shape.\\
+
+However, this result pales in comparison to the FFNO, which already demonstrates strong performance in predicting both spectra for both eddy and jet-driven online testing datasets. Nevertheless, FNO faces challenges, with only the one trained on \textbf{UE5000} managing to produce a stable eddy-driven online simulation; in the other three cases, simulation stability criterion (CFL number) was violated.
+
+\newpage
+
+ Moving to the distribution similarities shown in Fig.\ref{APP - ONLINE - PHASE 1 - SIMILARITIES - JETS UNIQUE 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 1 - SIMILARITIES - JETS UNIQUE 5000 and JETS ONLINE}, one can observe that in the space-time domain, the baseline neural networks and U-NET are more capable of maintaining simulations with dynamics less divergent from the original. However, neither FNO nor FFNO achieves a correct spatial distribution of flow quantities. Lastly, even though FFNO demonstrates strong offline performance, a quick look at Fig.\ref{APP - ONLINE - PHASE 1 - VORTICITY - JETS UNIQUE 5000 and JETS ONLINE} reveals that its simulation flow dynamics significantly deviate from the high-resolution.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+In summary, varying the sample approach while maintaining consistent neural network architectures and training conditions has a noticeable impact. The baseline FCNN trained on \textit{UE5000} displays a reduction of 3-6\% in $\rho$ and $R^2$ for both layers. Furthermore, architectures trained on \textit{UE5000} perform well in eddies offline but poorly in jets online, resulting in negative $R^2$ scores.\\
+
+
+However, when trained on \textit{UJ500}, neural networks produce slightly worse in eddies and slightly better in jets offline testing. Predicting subgrid flux $\mathbf{\Phi}_q$ consistently yields optimal results. Particularly, FFNO stands out by achieving positive $R^2$ for jet-type flows in the lower layer, unlike the baseline parameterizations.\\
+
+Transitioning to the online phase, FFNO excels in predicting energy spectra for both eddy and jet-driven testing datasets, while FCNN faces challenges. Distribution similarities uncover that baseline neural networks and U-NET better preserve a bit more the original dynamic, while FNO and FFNO struggle with spatial flow quantity distributions. Indeed, despite robust offline performance, FFNO simulation dynamics substantially differ from high-resolution counterparts.
+
+\input{tableaux/phase1}
+
+\newpage
+
+
+%------------------------------------------
+%
+%								       PHASE 2
+%
+%------------------------------------------
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 2}
+\end{center}
+\vspace{0.15cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+
+In the second phase, neural networks are trained on a dataset containing samples from 10 distinct simulations of a single flow type \textit{ME5000} and \textit{MJ5000}). The idea is to maintain the characteristic flow dynamics while expanding the input value range, which could enhance the parameterization ability to generalize to the other type of flow.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+As shown in Tab.\ref{C5 - TAB - PHASE 2}, there is improvement in every metric score. Notably, the FFNO performance stands out: when trained on the mixed eddie-driven flow dataset (\textit{ME5000}), its overall results on the eddies offline dataset are even worse than the baselines. However, although the results in the upper layer are still lower than the baselines on the jet offline dataset, the results of the lower layer clearly surpass the baselines. In addition to being positive, it reaches the best value obtained so far of 0.61. The FNO still lags behind the FFNO but performs better in the lower region on the jet offline datasets compared to the baselines. Interestingly, the FCNN trained on \textit{ME5000} and evaluated on the jets offline dataset produces significantly worse results than the baseline. This suggests that the network might have over-learned the patterns of the eddy-driven flow. As for the U-NET, its results fall short of those of the FCNN.
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+As depicted in Fig.\ref{APP - ONLINE - PHASE 2 - ENERGY BUDGET -  JETS MIXED 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 2 - ENERGY BUDGET -  JETS MIXED 5000 and JETS ONLINE}, the FCNN still struggles to capture the energy spectrum, whereas the U-NET and FFNO perform well. A nice observation is the U-NET remarkable ability to reproduce spatial distributions, visible in Fig.\ref{APP - ONLINE - PHASE 2 - SIMILARITIES -  JETS MIXED 5000 and EDDIES ONLINE} and Fig.\ref{APP - ONLINE - PHASE 2 - SIMILARITIES -  JETS MIXED 5000 and JETS ONLINE}. However, the FFNO similarity scores remains low and rarely reach the positive range. By contrast to phase 1, from a visual perspective, the simulation dynamics of the FFNO appear to align more closely with the high-resolution simulation in phase 2, as illustrated in Fig.\ref{APP - ONLINE - PHASE 2 - VORTICITY - JETS MIXED 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 2 - VORTICITY - JETS MIXED 5000 and JETS ONLINE}.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+To sum up, Tab.\ref{C5 - TAB - PHASE 2} highlights overall improvement in metric scores. In particular, the FFNO performance stands out, giving positive values in the lower layer for jet-driven flows. Furthermore, Fig.\ref{APP - ONLINE - PHASE 2 - ENERGY BUDGET -  JETS MIXED 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 2 - ENERGY BUDGET -  JETS MIXED 5000 and JETS ONLINE} reveal that the FCNN still struggles with the energy spectrum, whereas U-NET and FFNO excel. In addition to that, the U-NET effectively reproduces spatial distributions (Fig.\ref{APP - ONLINE - PHASE 2 - SIMILARITIES -  JETS MIXED 5000 and EDDIES ONLINE}), while FFNO lags in similarity scores. In comparison to phase 1, phase 2 simulations for the FFNO demonstrate better alignment with high-resolution simulations (Fig.\ref{APP - ONLINE - PHASE 2 - VORTICITY - JETS MIXED 5000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 2 - VORTICITY - JETS MIXED 5000 and JETS ONLINE}).
+
+\newpage
+\input{tableaux/phase2}
+
+%------------------------------------------
+%
+%								       PHASE 3
+%
+%------------------------------------------
+\newpage
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 3}
+\end{center}
+\vspace{0.25cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+
+
+In this third phase, neural networks are trained on datasets with more samples from different simulations of the same flow type (\textit{ME10000}, \textit{ME20000}, \textit{MJ10000} and \textit{MJ20000}). The idea is to determine if a substantial increase in data volume improves the learned parameterizations quality.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+From Tab.\ref{C5 - TAB - PHASE 3}, it is evident that increasing the total number of samples in each training dataset leads to improvement in almost every metric. It is worth noting that neural networks operating in the spatio-temporal domain, like FCNN and UNET, obtained worse results when trained on \textit{ME20000} and evaluated on jets offline. This might be because these networks overly focus on eddy patterns, making them struggle to generalize to jet flows. However, the reverse is not true. The fact that, by contrast to the neural networks operating in the space-time domain, both Fourier Neural Operators show improvement emphasizes the power of performing computations in the spectral domain.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+The power spectrum, as depicted in Fig.\ref{APP - ONLINE - PHASE 3 - ENERGY BUDGET -  JETS MIXED 20000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 3 - ENERGY BUDGET -  JETS MIXED 20000 and JETS ONLINE}, is still well reproduced by the U-NET and FFNO, but not by the FCNN and FNO. For the first time, almost every similarity metric of the FFNO exceeds the threshold of 0.5 set to filter out poor results from the plots. This indicates an improvement, even though it still struggles to replicate the distribution of the high-resolution simulation.\\
+
+From a visual point of view, both Fourier Neural Operators produce more aesthetically pleasing results that seems to be in line with the high resolution simulation compared to the baseline parameterizations, as seen in Fig.\ref{APP - ONLINE - PHASE 3 - VORTICITY - JETS MIXED 20000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 3 - VORTICITY - JETS MIXED 20000 and JETS ONLINE}.\\
+
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+Increasing sample numbers improves metrics (Tab.\ref{C5 - TAB - PHASE 3}). However, FCNN and UNET struggle when trained on \textit{ME20000} and tested on jets, possibly due to over-learning eddy patterns. Nevertheless, Fourier Neural Operators improve with an increase in spectral domain representation efficiency. In the online tests, the U-NET and FFNO keep exceling in power spectrum reproduction (Fig.\ref{APP - ONLINE - PHASE 3 - ENERGY BUDGET -  JETS MIXED 20000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 3 - ENERGY BUDGET -  JETS MIXED 20000 and JETS ONLINE}). The FFNO metrics have improved by exceeding our aribtrary 0.5 threshold, though distribution replication remains a challenge. Both Fourier Neural Operators yield visually appealing results, surpassing baseline parameterizations (Fig.\ref{APP - ONLINE - PHASE 3 - VORTICITY - JETS MIXED 20000 and EDDIES ONLINE} and \ref{APP - ONLINE - PHASE 3 - VORTICITY - JETS MIXED 20000 and JETS ONLINE}).
+
+
+\newpage
+
+\input{tableaux/phase3}
+
+%------------------------------------------
+%
+%								       PHASE 4
+%
+%------------------------------------------
+\newpage
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 4}
+\end{center}
+\vspace{0.15cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+
+In this fourth phase, neural networks are trained on datasets containing samples from both flow types. Besides studying the impact of shifting to a full dataset of 5000 samples (\textit{F5000}), we also assess the effects of training on a much larger dataset of 40000 samples (\textit{F40000}) at the same time.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+From the Tab.\ref{C5 - TAB - PHASE 4}, it is evident that this phase marks the most significant shift in results. The Fourier Neural Operators have both improved their metric scores when compared to the former phases. However, for the FCNN and UNET, their negative scores in the lower layer of the jets online simulation still persist. Notably, the FFNO results trained on \textit{F40000} are impressive. Although the metrics for the eddies online simulation are slightly lower than the baselines, the results for the jets simulation greatly outperform the baselines in terms of $R^2$ but are still a behind for $\rho$.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+The same shift in results is observable in Fig.\ref{APP - ONLINE - PHASE 4 - ENERGY BUDGET -  FULL 40000 and JETS ONLINE} concerning the power spectra. As previously discussed, strong offline performance does not guarantee smooth online simulation. Despite successfully completing both eddy and jet online simulations without violating the CFL number, the FFNO energy spectrum spikes in both cases. In additiont to that the FCNN still gives poor results, the U-NET worsens, but surprisingly, the FNO yields acceptable results. Additionally, all similarity scores (see Fig.\ref{APP - ONLINE - PHASE 4 - SIMILARITIES -  FULL 40000 and JETS ONLINE}) for all parameterizations have significantly dropped. Nonetheless, visualizations suggest that parameterizations can produce physics-like results, except for the U-NET, which notably fails to distribute energy correctly in its simulation, as shown in Fig.\ref{APP - ONLINE - PHASE 4 - VORTICITY -  FULL 40000 and JETS ONLINE}.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+Despite notable offline improvements for the FFNO due to the use of full datasets, the online results remained poor. In order to overcome this problem, we will investiguate further the FFNO architecture. Indeed, the solution might be found by optimizing the training conditions as well as the architecture used. Thus, the focus of the folllowing phases will on be toward the FFNO, keeping potential vorticity and velocity field as inputs, along with the conservative subgrid scale processes formulation for output, i.e. $\mathbf{\Phi}_q$.
+
+\input{tableaux/phase4}
+%------------------------------------------
+%
+%								       PHASE 5
+%
+%------------------------------------------
+\newpage
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 5}
+\end{center}
+\vspace{0.15cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+
+In this fifth phase, we focus on investigating the training conditions of the Factorized Fourier Neural Operators (FFNO). Originally, the training condition were the one of \cite{Benchmarking}. However, the objective now is to determine whether the FFNO can perform better, especially in online testing, with different combinations of optimizer (ADAM or SGD), scheduler (constant, cosine warmup, cosine, cyclic, exponential, and multi-step), and learning rate ($\gamma = 0.1, 0.01, 0.001$). Finally, the training was done using the \textit{F5000} dataset.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+All the results are depicted in Fig.\ref{APP - OFFLINE - PHASE 5 - SENSITIVITY TRAINING - JETS OFFLINE} and summarized in Tab.\ref{C5 - TAB - PHASE 5}. The first row in the table corresponds to the training conditions used in \cite{Benchmarking}, the second row shows the conditions recommended in the original FFNO paper by \cite{FFNO}, and the last rows display two of our results. As it can be seen, training with a cosine scheduler enhances the results, but a constant learning rate of 0.01 yields even better results. The most favorables are achieved with a learning rate of 0.01. Nevertheless, it is worth noting that when $\gamma = 0.001$, the best results also arises from using a constant scheduler. Finally, a small improvement in metric values is easily observed between the original training conditions and the best ones obtained.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+The online testing results underscore the significance of benchmarking the parameterization in a real-case simulation. As depicted in Fig.\ref{APP - ONLINE - PHASE 5 - ENERGY BUDGET -  FULL 5000 and JETS ONLINE}, the FFNO, which exhibited superior offline results using a constant learning rate of 0.01, now demonstrates an energy spectrum that explodes during online testing. As a consequence, the second-best results take precedence as the new best results. This implies that the FFNO will be trained using a constant scheduler rather than a multi-step or even cosine scheduler.\\
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+The Factorized Fourier Neural Operator will now be trained using the ADAM optimizer and a constant learning rate of 0.001 since it has improved all its metric scores. Consequently, the final step of this study involves exploring the architecture of the FFNO while using these newly identified training conditions to obtain the final parameterization of this study.
+
+\newpage
+\input{tableaux/phase5}
+\newpage
+
+%------------------------------------------
+%
+%								       PHASE 6
+%
+%------------------------------------------
+\rule[0cm]{\linewidth}{0.075cm}
+\begin{center}
+\Large \textbf{PHASE 6}
+\end{center}
+\vspace{0.15cm}
+\rule[0.3cm]{\linewidth}{0.075cm}
+
+In this sixth phase, the focus is on diving deeper into the architecture of the FFNO. One of the main advantages of this architecture, compared to the FNO, lies in its ability to scale to more than the 4 Fourier layers allowed originally by the FNO. Additionally, it is interesting to investigate the role of the spectral modes for prediction. To conduct a more comprehensive analysis, modifications have been made to the FFNO library, enabling the use of a pass-band filter instead of a simple low-pass. This means specific modes within a range can now be chosen for prediction, as opposed to relying solely on the maximum mode and all modes up to it. Moreover, examining the influence of the latent space representation size, used for enhancing the original input, is important. In conclusion, this study will explore the impacts of number of layers, latent space size (= width of Fourier layer), the modes selected and the training was done using \textit{F5000} and batch size of 32.
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Offline}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+All results are depicted in Fig.\ref{APP - OFFLINE - PHASE 6 - SENSITIVITY ARCHITECTURE P1 - JETS OFFLINE} and \ref{APP - OFFLINE - PHASE 6 - SENSITIVITY ARCHITECTURE P2 - JETS OFFLINE}, with a summary presented in Tab.\ref{C5 - TAB - PHASE 6}. The optimal configuration emerges with a width of 128. Indeed, an important difference in metric values is observed between modes ($0, 8$) and configurations using more modes, while distinctions between ($16, 24$) and ($24, 32$) modes are less pronounced. Interestingly, the performance gap between a width of 128 using the initial 32 modes with 24 layers diminishes when compared to the setup employing 4 layers. Introduction of a pass band filter underscores the significance of the first 8 modes, yielding superior results for the parameterization by contrast to using any other 8 modes. It is important to highlight that, the FFNO demonstrates exceptional performance with a width of 128, 24 layers, and the first 32 modes, significantly outperforming the baselines even in the case using only 4 layers.
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Online}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+Each configuration exhibits stable energy spectra that aligns with either the low-resolution or high-resolution spectra (see Fig.\ref{APP - ONLINE - PHASE 6 - ENERGY BUDGET -  FULL 5000 and JETS ONLINE}). Notably, the FFNO, in its optimal configuration, presents improved similarity scores in the spectral domain (see Fig.\ref{APP - ONLINE - PHASE 6 - SIMILARITIES -  FULL 5000 and JETS ONLINE}). However, this improvement is not yet mirrored in the spatial distribution of the flow quantities of interest.
+
+\rule[0cm]{\linewidth}{0.025cm}
+\begin{center}
+\small \textbf{Conclusion}
+\end{center}
+\rule[0.3cm]{\linewidth}{0.025cm}
+
+In conclusion, the best FFNO  configuration uses a width of 128, 24 layers, and the first 32 modes consistently outperforms baselines across various metrics. It exhibits stable energy spectra and improved similarity scores in the spectral domain. However, there is still room for improvements regarding the spatial distribution of flow quantities.
+
+
+
+\input{tableaux/phase6}
+

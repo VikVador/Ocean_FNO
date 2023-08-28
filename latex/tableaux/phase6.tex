@@ -1,0 +1,45 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}[H]
+\vspace{-0.5cm}
+\hspace{-1.2cm}
+\begin{tabular}{llclclclclclclclclclclclclclclcl}
+\Xhline{1.5pt}\\[-1.5em]
+\textbf{} &  & \textbf{Width} &  & \textbf{Modes} &  & \textbf{Num. Layers} &  & \textbf{Loss (Val.)} &  & $\boldsymbol{\rho_{1}}$ &  & $\boldsymbol{\rho_{2}}$ &  & $\boldsymbol{R^2}_1$ &  & $\boldsymbol{R^2}_2$ \\[0.4em] 
+\cline{1-1} \cline{3-3} \cline{5-5} \cline{7-7} \cline{9-9} \cline{11-11} \cline{13-13} \cline{15-15} \cline{17-17} \\[-1.4em]
+FFNO        &  & 128      &  & (0,\ 8)       &  & 24       &  & 0.41          &  & 0.72         &  & 0.77         &  & 0.51       &  & 0.59        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.75         &  & 0.47         &  & 0.55       &  & 0.21        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (0,\ 16)      &  & 24       &  & 0.09          &  & 0.96         &  & 0.96         &  & 0.93       &  & 0.92        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.97         &  & 0.85         &  & 0.94       &  & 0.72         \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (0,\ 24)      &  & 24       &  & 0.05          &  & 0.99         &  & 0.98         &  & 0.97       &  & 0.96        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.99         &  & 0.93         &  & 0.98       &  & 0.85        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (0,\ 32)      &  & 24       &  & 0.01          &  & 0.99         &  & 0.99         &  & 0.98       &  & 0.98        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.99         &  & 0.96         &  & 0.99       &  & 0.93        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (8,\ 16)      &  & 24       &  & 0.42          &  & 0.72         &  & 0.77         &  & 0.52       &  & 0.6        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.67         &  & 0.33         &  & 0.45       &  & 0.10        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (16,\ 24)     &  & 24       &  & 0.70          &  & 0.54         &  & 0.57         &  & 0.28       &  & 0.30        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.47         &  & 0.22         &  & 0.23       &  & 0.05        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (24,\ 32)     &  & 24       &  & 0.96          &  & 0.19         &  & 0.22         &  & 0.03       &  & 0.03        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.24         &  & 0.19         &  & 0.10       &  & 0.02        \\  
+\hline \\[-1.4em]
+FFNO        &  & 128      &  & (0,\ 32)      &  & 4        &  & 0.04          &  & 0.99         &  & 0.98         &  & 0.97       &  & 0.96        \\ \rowcolor{Gray}
+-     		&  & -        &  & 	-		     &  & -        &  & -              &  & 0.99         &  & 0.93         &  & 0.98       &  & 0.86        \\  [0.2em]
+\hline \\[-1.4em]
+FCNN        &  & UE5000          &  & $q$       &   & $S_{q_{\text{total}}}$     &  & 0.09      &  & 0.91       &  & 0.95     &  & 0.82      &  & 0.90         \\ \rowcolor{Blue}
+-     		&  & -               &  & -            &   &  -                                       &  &  -           &  & 0.86      &  & 0.82     &  & -0.52     &  & -4.63        \\ 
+FCNN        &  & UE5000          &  & $q$       &   & $S_q$                               &  & 0.09      &  & 0.91       &  & 0.95     &  & 0.82      &  & 0.90             \\ \rowcolor{Blue}
+-     		&  & -               &  & -            &   &  -                                       &  &  -           &  & 0.86      &  & 0.82      &  & -0.52    &  & -4.63          \\ 
+FCNN        &  & UE5000          &  & $q$       &   & $\phi_q $                          &  & 0.05      &  & 0.98      &  & 0.97      &  & 0.97      &  & 0.94             \\ \rowcolor{Blue}
+-     		&  & -               &  & -            &   & -                                          &  &  -           &  & 0.95      &  & 0.76      &  & -0.22    &  & -8.07             \\ [0.4em]
+\Xhline{1.5pt}\\[-0.8em]      
+\end{tabular}
+\caption{\textbf{|}\textcolor{section_color}{\textbf{Offline - Phase 6}}\textbf{|} Summarizing table of offline results. The white lines represent results for the \textbf{eddies offline} dataset, while the colored lines correspond to the \textbf{jets offline} dataset. The inputs of the tested parameteriations are ($q, u, v$) and the output is the subgrid flux $\mathbf{\Phi}_q$. Along with the different configurations explored, the validation loss (calculated on an unseen dataset of 5000 samples; for eddy training, the corresponding dataset is named \textbf{eddies validation}, and likewise for jets and the full dataset) is shown. The metric values for $R^2$ (see Eq.\ref{C5 - EQ - Coefficient of determination}) and $\rho$ (see Eq.\ref{C5 - EQ - Pearson}) are given for both the upper layer (i = 1) and lower layer (i = 2).}
+\label{C5 - TAB - PHASE 6}
+\end{table}
+\bgroup

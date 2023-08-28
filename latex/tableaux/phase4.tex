@@ -1,0 +1,40 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}[H]
+\hspace{-0.70cm}
+\begin{tabular}{llclclclclclclclclclclclclclclcl}
+\Xhline{1.5pt}\\[-1.5em]
+\textbf{} &  & \textbf{Dataset} &  & \textbf{Input} &  & \textbf{Output} &  & \textbf{Loss (Val.)} &  & $\boldsymbol{\rho_{1}}$ &  & $\boldsymbol{\rho_{2}}$ &  & $\boldsymbol{R^2}_1$ &  & $\boldsymbol{R^2}_2$ \\[0.4em] 
+\cline{1-1} \cline{3-3} \cline{5-5} \cline{7-7} \cline{9-9} \cline{11-11} \cline{13-13} \cline{15-15} \cline{17-17} \\[-1.4em]
+FCNN        &  & F5000           &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.04          &  & 0.98           &  & 0.97           &  & 0.95             &  & 0.94         \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.94           &  & 0.85           &  & 0.40             &  & -5.75         \\  
+-           &  & F40000          &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.02          &  & 0.99           &  & 0.98           &  & 0.97         &  & 0.93          \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.95           &  & 0.85           &  & 0.41         &  & -4.67             \\  
+\hline \\[-1.4em]
+UNET        &  & F5000           &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.25          &  & 0.93           &  & 0.84           &  & 0.84             &  & 0.68         \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.89           &  & 0.63           &  & 0.32             &  & -4.91         \\  
+-           &  & F40000          &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.20          &  & 0.94           &  & 0.88           &  & 0.87         &  & 0.75          \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.90           &  & 0.69           &  & 0.41         &  & -6.11             \\  
+\hline \\[-1.4em]
+FNO         &  & F5000           &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.54          &  & 0.71           &  & 0.69           &  & 0.5             &  & 0.47         \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.70           &  & 0.37           &  & 0.49             &  & 0.13         \\  
+-           &  & F40000          &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.41          &  & 0.8            &  & 0.77           &  & 0.64          &  & 0.60          \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.8            &  & 0.47           &  & 0.63          &  & 0.22             \\  
+\hline \\[-1.4em]
+FFNO        &  & F5000           &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.21          &  & 0.91           &  & 0.89           &  & 0.84             &  & 0.79         \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.91           &  & 0.70           &  & 0.83             &  & 0.49         \\  
+-           &  & F40000          &  & ($q$, $u$, $v$)  &  & $\phi_q$ &  & 0.15          &  & 0.94           &  & 0.93           &  & 0.88          &  & 0.86          \\ \rowcolor{Gray}
+-     		&  & -               &  & -				   &  & -        &  & -              &  & 0.94           &  & 0.79           &  & 0.89          &  & 0.62          \\  [0.2em]
+\hline \\[-1.4em]
+FCNN      &  & UE5000      &  & $q$       &   & $S_{q_{\text{total}}}$     &  & 0.09      &  & 0.91       &  & 0.95     &  & 0.82      &  & 0.90         \\ \rowcolor{Blue}
+-     		&  & -                  &  & -            &   & -                                       &  &  -           &  & 0.86      &  & 0.82     &  & -0.52     &  & -4.63        \\ 
+FCNN      &  & UE5000      &  & $q$       &   & $S_q$                               &  & 0.09      &  & 0.91       &  & 0.95     &  & 0.82      &  & 0.90             \\ \rowcolor{Blue}
+-     		&  & -                  &  & -            &   & -                                       &  &  -           &  & 0.86      &  & 0.82      &  & -0.52    &  & -4.63          \\ 
+FCNN      &  & UE5000      &  & $q$       &   & $\phi_q $                          &  & 0.05      &  & 0.98      &  & 0.97      &  & 0.97      &  & 0.94             \\ \rowcolor{Blue}
+-     		&  & -                  &  & -            &   & -                                          &  &  -           &  & 0.95      &  & 0.76      &  & -0.22    &  & -8.07             \\ [0.4em]
+\Xhline{1.5pt}\\[-0.8em]      
+\end{tabular}
+\caption{\textbf{|}\textcolor{section_color}{\textbf{Offline - Phase 4}}\textbf{|} Summarizing table of offline results. The white lines represent results for the \textbf{eddies offline} dataset, while the colored lines correspond to the \textbf{jets offline} dataset. Along with the training conditions, the validation loss (calculated on an unseen dataset of 5000 samples; for eddy training, the corresponding dataset is named \textbf{eddies validation}, and likewise for jets and the full dataset) is shown. The metric values for $R^2$ (see Eq.\ref{C5 - EQ - Coefficient of determination}) and $\rho$ (see Eq.\ref{C5 - EQ - Pearson}) are given for both the upper layer (i = 1) and lower layer (i = 2).}
+\label{C5 - TAB - PHASE 4}
+\end{table}
+\bgroup

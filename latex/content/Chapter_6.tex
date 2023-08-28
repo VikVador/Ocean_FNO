@@ -1,0 +1,124 @@
+% ------------------------------------------------------------------
+%                                                 Chapter 0
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{Six}{The end of an adventure}{6}{In this final chapter, a summary of the entire work will be provided, followed by a discussion where notable observations and potential improvements will be highlighted. This will containt insights gathered during the journey, including ideas for further exploration left for the reader to consider.}
+
+
+% -------------------------------
+%                    Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Conclusion}
+
+The journey undertaken throughout this work, as complex and fascinating as it is, can be summarized as follows: Over the past decades, global climate change has continuously led to increased natural disasters, humanitarian crises, and ocean oxygen deoxygenation. To address these challenges, it is important, as engineers, to find a model that enables the simulation, understanding, and prediction of the Earth climate system. However, working at the Earth scale is time-consuming, and the most viable solution is to lower the simulation resolution. Yet, this approach results in missing some physics described by the equations, leading to less accurate representation of the intended dynamics.\\
+
+A simple solution to address this problem is obtained by considering these missing processes, often termed subgrid scale processes, through parameterization. Analytically, this issue, also known as turbulence closure modeling, has been present for a century. Despite some promising ideas, they all share a common limitation: they have to increase artificially some physical properties of the fluid whose motion we aim to describe. As a result, the dynamics depicted in the simulation do not truly match the actual behavior. In response to the rapidly growing field of machine learning, scientists have spent the past decade exploring its intersection with fluid mechanics. This idea involves using a neural network to serve as the parameterization for the missing contributions from subgrid scale processes.\\ 
+
+This master thesis is centered around the study by \cite{Benchmarking}. Over the years, they developed varying parameterizations, each with its advantages and disadvantages. To more effectively and rigorously evaluate their quality, they established a benchmarking framework, thoroughly described in their paper. Thus, the goal of our study was rather simple, even if the physical context is not: Is it possible to find a new parameterization for the subgrid scale processes that works better (this being assessed with their framework) than the one they presented? To answer this problem, the chosen path was found as follows: in their future work section, they explained that, even if they have investigated a lot of different ideas, one thing they did not do is study the impact of more complex datasets.
+
+\newpage
+
+Therefore, this will be our chosen path to drive this study. Furthermore, instead of merely using the fully-convolutional neural network they used multiple times and attempting to enhance it, we have also decided to incorporate a U-NET, a state of the art model in image recognition. But most importantly of all, we have also ventured into exploring the use of the Fourier Neural Operators for subgrid scale processes parameterization, a path that, as for today, has not been taken until now. After carefully explaining the physics to understand computational fluid dynamics, ocean modeling, and the mathematical formulation of the missing contributions we aim to compute, we proceeded with an in-depth description of how these new Fourier Neural Operators operate. Subsequently, we covered the datasets used, the training setup, and the metrics. Throughout our analysis, we were able to highlight several key factors:
+
+\vspace{1em}
+\begin{itemize}
+	\item \textbf{FCNN}: The architecture displayed some improvement in its predictive capabilities when using our more complex datasets. Nevertheless, using this neural network for simulation still appears unfavorable due to inadequate energy spectra representation. This final results suggest that the architecture should be simply revisited if one hopes to finally obtain a more coherent online simulation.
+
+	\vspace{1em}
+	\item \textbf{U-NET}: This state of the art architecture did not outmatch the FCNN in any test regarding the predicting capabilities. However, the key observation that can be made is its ability to correctly redistribute spatially flow quantities. In other words, it seems like this architecture correlates the longest with the dynamic of the high resolution simulation. Thus, an idea would be to create an architecture that uses the best of both.
+	
+	\vspace{1em}
+	\item \textbf{FNO} and \textbf{FFNO}: This study showed the power of Fourier Neural Operators, which, in contrast to everything done so far in this situation, perform a major part of their computation in the spectral domain. At the end of this study, we obtained a final parameterization for the subgrid scale processes that outperform the prediction capabilities of the networks presented in their papers \cite{Benchmarking}. Moreover, when using metrics of their framework, we also observe that the energy deficiency of the simulation was more accurately corrected. However, as for many engineering problems, nothing comes without a tradeoff. While the recently acquired parameterization shows highly promising prediction results, its drawback emerges from the inability to precisely align the spatial corrections with the high-resolution simulation dynamics. As a result, the simulation's behavior deviates from that of the high-resolution.
+	
+\end{itemize}
+
+\newpage
+
+\subsectionTFE{Discussion and future work}
+
+Even though this work was complex due to the fascinating but complicated intersection of physics and deep learning, I do think that we managed to extract some valuable information regarding this problem of subgrid scale processes parameterization. Throughout this work and also after completing it, I realized that some choices made could have been better, and also, I had ideas about what could be explored to try to go further. This reflection path can be broken down as follows:
+
+\vspace{1em}
+\textbf{DATASETS}
+
+\begin{itemize}
+	\item While generating datasets, I noticed that from time to time, the bottom layer of a jet-driven flow looked a lot like what can be found in an eddy-driven flow. This could be the reason why a neural network on an eddy-driven flow performs worse on the offline test made on jets than the other way around. Therefore, it might have been interesting to change the proportions of samples from the upper and lower layers of a jet-driven dataset to something like 75-25 instead of a mere 50-50.
+	
+	\item In the case of a jet-driven flow, the sampling can only start after 6 years; otherwise, the quasi-steady state solution is not reached. Therefore, since the simulation is still performed on a 10-year interval and the same number of samples is asked, it might be possible that the sampling of the simulation is poorly performed, leading to samples that are temporarily speaking too close to one another and thus the dynamics of the flow are not explored well enough. Thus, a solution could be to run the simulation for a bit longer to put more space between sampling moments.
+\end{itemize}
+
+\vspace{1em}
+\textbf{NEURAL NETWORKS}
+
+\begin{itemize}
+	\item In the Factorized Fourier Neural Operator architecture, I wonder what would happen if the modulation of the frequency spectrum between the input and the target output was performed with something more advanced than a simple weight matrix. Indeed, what would happen if the modulation was achieved using something capable of creating non-linear relationships, such as a fully connected neural network?
+	
+\item As we have observed, the best results obtained were using the first 32 modes of the frequency spectrum. Instead of using a single weight matrix for all modes simultaneously, it could be interesting to have Fourier layers that specialize in modulating different parts of the spectrum, and then recombine their results. This approach could be very intriguing. Imagine successfully creating a parameterization using deep learning models based on Fourier analysis. Each of these Fourier blocks would focus on learning how to modulate a part of the spectrum, and at the end of the network, a final layer would mix the results. Using a technique like the one described in \cite{PySR}, we could attempt to extract the learned relationships and find parameterizations for the missing subgrid scale contributions occurring at different scales of our problem. Finally, we would learn how to combine these equations to create a complete one. This could provide an interpretable parameterization that would offer further insights into how to address this long-standing problem.
+	
+\item The main issue with the Fourier Neural Operators is their inability to reproduce spatial distributions of flow quantities the same way a high-resolution simulation does, i.e. the corrected low-resolution simulation diverges too quickly from the dynamics of the high-resolution. Another idea that I tried to investigate, unfortunately without success, is to create a new architecture that would combine the benefits of computing operations in the spectral domain (better energy correction) and performing operations in the spatiotemporal domain (similar to the U-NET and FCNN), allowing for a more accurate spatial representation of the flow variables. This to me, is one of the key ideas that have emerged from this work.
+	
+	\item Even if the results of the FFNO are impressive, it could have been interesting to evaluate its performance using an early stopped version of the network during training. Indeed, it seems rather obvious that the network might have overfitted the data a bit during training for 50 epochs. Fortunately, all the neural network states from every epoch are saved, but time is the only thing missing to investigate what would effectively happen.
+
+	\item A metric that I did not use but which is really important is the decorrelation time. It is a measure of the time it takes for the low-resolution simulation to diverge from the high resolution. In their framework, the way online metrics are computed, if not averaged over time, is at the end of the simulation using the last time step. Therefore, by checking the decorrelation time of the simulation, it could be interesting to recompute these metrics at a moment (if it exists) where the simulations still match one another (even if that might not be the case in this context).
+	
+\item Even if the FFNO gave promising results, I am a bit disappointed with the time it takes to run a simulation. Indeed, another issue with this architecture is the fact that the Fourier transform and its inverse must be computed at each Fourier Layer, which is a pretty time-consuming operation. In addition to that, both the original input and the one being transformed in the spectral domain must be stored on the GPU, which leads to a huge memory need during training. During Phase 6, it was not possible to train the 24-layer FFNO without using 4 GPUs.
+	
+\end{itemize}
+
+\textbf{OTHERS}
+
+Although this benchmarking framework is a significant leap forward in the field of subgrid processes parameterizations as it allows a rigorous assessment of their quality, I still think that it lacks a bit of simplicity. Due to the already substantial complexity of the problem studied, it is not possible to use any functions without wondering what is given as input and what is the physical meaning of the output. In addition to that, making sense of the results is still a challenging task due to the complexity of these metrics and the fact that their interpretability makes sense only if the reader has a minimum background knowledge in both fluid mechanics and statistics. Therefore, a large portion of my time was dedicated to making the framework more user-friendly by creating a notebook that would allow me to use these tools more simply. For anyone curious about how to use PyQG or how to use their framework, I highly encourage you to try my master thesis notebook available on my GitHub page. I tried to document as much as possible what is possible to do, how to generate data, train a parameterization, evaluate it both offline and online as simply as possible.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

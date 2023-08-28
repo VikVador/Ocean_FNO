@@ -1,0 +1,26 @@
+\bgroup
+\def\arraystretch{1.5}
+\begin{table}[H]
+\vspace{-0.5cm}
+\hspace{-1.2cm}
+\begin{tabular}{llclclclclcl}
+\Xhline{1.5pt}\\[-1.5em]
+\textbf{Architecture}  &  & $\boldsymbol{R^2}_1$ &  & $\boldsymbol{R^2}_2$ \\[0.4em] 
+\cline{1-1} \cline{3-3} \cline{5-5} \\[-1.4em]
+FCNN        &  & 0.98           &  & 0.97        \\ \rowcolor{Gray}
+-     		&  & \textbf{-0.34}     &  & \textbf{-15.23}       \\ [0.4em]
+\hline \\[-1.4em]
+UNET        &  & 0.90      &  & 0.80        \\ \rowcolor{Gray}
+-     		&  & -0.43     &  & -14.45       \\  
+\hline \\[-1.4em]
+FNO         &  & 0.6       &  & 0.59        \\ \rowcolor{Gray}
+-     		&  & 0.41      &  & -0.34        \\  
+\hline \\[-1.4em]
+FFNO        &  & 0.87           &  & 0.85        \\ \rowcolor{Gray}
+-     		&  & \textbf{0.86}    &  & \textbf{0.37}        \\ 
+\Xhline{1.5pt}\\[-0.8em]      
+\end{tabular}
+\caption{\textbf{|}\textcolor{section_color}{\textbf{Offline - Phase 6}}\textbf{|} Summarizing table of offline results. The white lines represent results for the \textbf{eddies offline} dataset, while the colored lines correspond to the \textbf{jets offline} dataset. The inputs of the tested parameteriations are ($q, u, v$) and the output is the subgrid flux $\mathbf{\Phi}_q$. Along with the different configurations explored, the validation loss (calculated on an unseen dataset of 5000 samples; for eddy training, the corresponding dataset is named \textbf{eddies validation}, and likewise for jets and the full dataset) is shown. The metric values for $R^2$ (see Eq.\ref{C5 - EQ - Coefficient of determination}) and $\rho$ (see Eq.\ref{C5 - EQ - Pearson}) are given for both the upper layer (i = 1) and lower layer (i = 2).}
+\label{C5 - TAB - PHASE 6}
+\end{table}
+\bgroup

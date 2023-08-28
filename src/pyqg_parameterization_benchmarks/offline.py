@@ -29,6 +29,9 @@ from pyqg_parameterization_benchmarks.utils             import *
 from pyqg_parameterization_benchmarks.utils_TFE         import *
 from pyqg_parameterization_benchmarks.plots_TFE         import *
 from pyqg_parameterization_benchmarks.neural_networks   import NN_Parameterization_Handler
+from pyqg_parameterization_benchmarks.nn_analytical     import BackscatterBiharmonic, Smagorinsky, HybridSymbolic
+
+
 
 # -----------------------------------------------------
 #                         Main

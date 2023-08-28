@@ -1,8 +1,0 @@
-sbatch MIXED_FCNN_param_1.sh
-sbatch MIXED_FCNN_param_2.sh
-sbatch MIXED_FCNN_param_3.sh
-sbatch MIXED_FCNN_param_4.sh
-sbatch MIXED_FCNN_param_5.sh
-sbatch MIXED_FCNN_param_6.sh
-sbatch MIXED_FCNN_param_7.sh
-sbatch MIXED_FCNN_param_8.sh

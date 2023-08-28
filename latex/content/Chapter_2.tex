@@ -1,0 +1,553 @@
+% ------------------------------------------------------------------
+%                                                        Chapter 2
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{Two}{An introduction to fluid dynamics}{2}{The objective of this chapter is to introduce the concept of conservation laws in fluid dynamics, derive the Navier-Stokes equations and physically interpret them, introduce the Quasigeostrophy theory, and explore subgrid scale physics parameterizations.}
+
+% -------------------------------
+%                       Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Conservation law}
+
+The foundation of fluid dynamics is laid upon conservations laws. The meaning of these laws does not result from mathematics but from physics and observations of the surrounding world. For example, the conservation law for a quantity $\mathbb{U}$ can be stated as:
+
+% CITATION : CFD - Chapter 1
+
+\vspace{3mm}
+\begin{box_definition}{Definition of a conservation law}
+The variation of the total amount of a quantity $\mathbb{U}$ inside a given domain is equal to the balance between the amount of that quantity entering and leaving the considered domain, plus the contributions from eventual sources generating that quantity.
+\end{box_definition}
+\vspace{3mm}
+
+Of course, not all flow quantities obey to conservation laws. Indeed, only the mass, momentum and energy do whereas pressure, temperature and entropy do not sastify a conservation law. Now, from a mathematical point of view, the general form of the conservation law can be derived rather easily. 
+
+\vspace{0.7em}
+\begin{wrapfigure}[10]{r}{.5\linewidth}
+	\vspace{-1.5em}
+    \centering
+    \resizebox{\linewidth}{0.75\linewidth}{\input{figures/appendices/control_volume}}
+    \caption{Arbitrary control volume $\Omega$ of fluid and representation of basic mathematical notions used in fluid dynamics.}
+    \label{C2 - FIG - Fluid Particle}
+\end{wrapfigure}
+
+Indeed, in order to understand how $\mathbb{U}$ evolves through time, it is first important to define and understand basic notions such as the one depicted in Fig.\ref{C2 - FIG - Fluid Particle} where:
+
+\begin{itemize}
+	\item$\Omega$ is the control volume;
+	\item$\mathbf{F}$ is a flux entering the volume;
+	\item$S = \delta \Omega$ is the boundary of this control volume;
+	\item$d\mathbf{S}$ is the surface element vector pointing along the outward normal;
+	\item$Q_V$ and $\mathbf{Q}_S$ are respectively volume and surface sources with respect to the control volume $\Omega$.
+\end{itemize}
+
+\newpage
+
+Thus, by translating  the conservation law into mathematical terms and using the different notions defined in Fig.\ref{C2 - FIG - Fluid Particle}, one obtains:
+
+\vspace{0.1em}
+\begin{equation*}
+\underbrace{\frac{\partial}{\partial t} \int_{\Omega} \mathbb{U} \mathrm{~d} \Omega}_{\substack{\text{Change of total} \\ \text{amount of } \mathbb{U} \text{ in } \Omega}} =
+- \underbrace{\int_S \mathbf{F} \cdot \mathrm{d} \mathbf{S}}_{\substack{\text{Amount of } \mathbb{U} \\ \textbf{entering }  - \textbf{ leaving } \Omega}}
++\underbrace{\int_{\Omega} Q_V \mathrm{~d} \Omega
++\int_S \mathbf{Q}_S \cdot \mathrm{d} \mathbf{S}}_{\text{Amount of } \mathbb{U} \textbf{ generated}}
+\end{equation*}
+\vspace{0.2em}
+
+which corresponds mathematically to the \textbf{global form of the conservation law} and it holds true for any abritrary volume $\Omega$. In addition to that, it is important to notice that due to the integrals, it is implied that this law should be verified all over the volume. However, it is also interesting to extract the \textbf{local form} of this equation, i.e. the equation that should be satisfied locally over each point contained in the volume. In order to do so, one must use Gauss theorem which is stated as follows:
+
+\vspace{5mm}
+\begin{box_definition}{Gauss theorem}
+Let $\Omega$ be a volume in $\mathbb{R}^3$ and S be the closed surface that encloses $\Omega$. If $\mathbf{F} $ is a flux that is continuously differentiable within $\Omega$ and over $S$,  one has:
+
+\begin{equation}
+\int_S \mathbf{F} \cdot \mathrm{d} \mathbf{S}=\int_{\Omega} \nabla \cdot \mathbf{F} \ \mathrm{d}\Omega
+\label{C2 - EQ - Gauss theorem}
+\end{equation}
+\vspace{-0.2em}
+
+where $\nabla \cdot \mathbf{F}$ corresponds to the divergence of the vector field. That is, if $\mathbf{F}$ is a close loop, the divergence would be zero, whereas if the vector field tends to move away from a point, then $\nabla \cdot \mathbf{F}$ would be greater than zero.
+
+\end{box_definition}
+\vspace{3mm}
+
+In other words, Gauss theorem asserts that the total amount of a given quantity  $\mathbb{U}$ only depending on a flux $\mathbf{F}$ in an arbitrary volume $\Omega$ can be computed with a volume integral of all sources and sinks or equivalently, using the overall flow passing through the boundary of the volume. An illustration of these integrals is represented in Fig.\ref{C2 - FIG - Gauss}.
+
+% CITATION : ANALYSE 2 - Gauss theorem
+\vspace{0.4em}
+\begin{figure}[!h]
+    \centering
+    \input{figures/appendices/gauss}    
+    \caption{The arbitrary volume $\Omega$ contains a quantity $\mathbb{U}$ that depends solely on the flux $\mathbf{F}$. In the left figure, the total amount of $\mathbb{U}$ is computed using the boundary $S$ and the surface element vector $d\mathbf{S}$. In the right figure, the total amount of $\mathbb{U}$ is computed by considering the control volume $\Omega$, the infinitesimal volume $\mathrm{d}\Omega$, and the divergence of $\mathbf{F}$.}
+    \label{C2 - FIG - Gauss}
+\end{figure}
+
+\newpage
+
+Therefore, with the use of Gauss theorem, one obtains:
+
+\vspace{-0.8em}
+\begin{spreadlines}{1em}
+\begin{align*}
+\frac{\partial}{\partial t} \int_{\Omega} \mathbb{U} \mathrm{~d} \Omega & = - \int_S \mathbf{F} \cdot \mathrm{d} \mathbf{S} + \int_{\Omega} Q_V \mathrm{~d} \Omega + \int_S \mathbf{Q}_S \cdot \mathrm{d} \mathbf{S} \\
+& = - \int_{\Omega} \nabla \cdot \mathbf{F} \mathrm{~d} \Omega + \int_{\Omega} Q_V \mathrm{~d} \Omega + \int_{\Omega} \nabla \cdot \mathbf{Q}_S \mathrm{~d} \Omega
+\end{align*}
+\end{spreadlines}
+\vspace{-0.6em}
+
+Since the control volume is fixed, i.e. it does not evolve through time, the time derivative can be moved under the integral sign. In addition to that, this equation holds true for any arbitrary volume $\Omega$ hence, both sides are equal with respect to the integrand of the integrals which leads finally to the \textbf{local form of the conservation law}:
+
+\vspace{0.2em}
+\begin{equation*}
+\frac{\partial \mathbb{U}}{\partial t}  = - \nabla \cdot \mathbf{F} + Q_V + \nabla \cdot \mathbf{Q}_S
+\end{equation*}
+\vspace{0.3em}
+
+\begin{wrapfigure}[16]{r}{.5\linewidth}
+	\vspace{-7mm}
+    \centering
+    \resizebox{\linewidth}{0.65\linewidth}{\input{figures/appendices/fluxes}}
+    \caption{Fluid at rest (straight grey lines) in a pipe (black lines) with some dye (black dot) at time $t = 0$ [$s$]. The control volume $\Omega$ defines the zone of interest to observe the evolution of the dye concentration through time.}
+    \label{C2 - FIG - Fluid and fluxes}
+\end{wrapfigure}
+
+In computational fluid dynamics, this equation is extremely important since most of the numerical schemes are based on it and also, it allows to gain insights into the intricate details of fluid behavior at different scales.\\
+
+Finally, it is important to understand the physical meaning of the flux $\mathbf{F}$ since it plays a major role regarding the behaviour of the flow. In order to do so, one can imagine a fluid flowing through a pipe with a drop of dye placed intially at random as shown in Fig.\ref{C2 - FIG - Fluid and fluxes}. The question is \textit{what influences the evolution of dye concentration through time in the control volume $\Omega$ ?}\\
+
+In a first case scenario, the fluid starts to move forward as shown in Fig.\ref{C2 - FIG - Convective and Diffusive Flux}a and as a consequence, the dye is carried away by the flow. Therefore, the time variation of the dye inside the control volume $\Omega$ is induced by a convective flux, i.e. a transport of the dye owing to the fluid flow with a velocity $\mathbf{v}$. The general mahematical expression of this \textbf{convective flux} $\mathbf{F}_C$, where $\mathrm{U}$ is a given flow quantity and $\mathbf{v}$ the fluid velocity field, is:
+
+\vspace{-1mm}
+\begin{equation}
+	\mathbf{F}_C = \mathbb{U} \mathbf{v}
+	\label{C2 - EQ - Convective flux equation}
+\end{equation}
+\vspace{-0.5em}
+
+In the second case scenario represented in Fig.\ref{C2 - FIG - Convective and Diffusive Flux}b, the fluid remains at rest which prevents the transport of dye by the flow. Initially, at the microscopic level, the high concentration of localized dye results in frequent collisions between closely packed molecules due to random thermal molecular movements. These collisions transfer energy, leading to increased movements of neighboring molecules. Consequently, the dye gradually diffuses throughout the system as collisions continue to increase and eventually, the dye diffuses in the control volume $\Omega$. As a result, the time variation of the dye concentration is due to a diffusive flux, i.e. a macroscopic transport driven by microscopic molecular agitation.
+
+\newpage
+
+\begin{figure}[!t]
+    \begin{subfigure}[c]{0.5\textwidth}
+        \resizebox{\linewidth}{0.6\linewidth}{\input{figures/appendices/flux_convective}}
+        \caption{}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[c]{0.5\textwidth}
+    	 \vspace{0.3mm}
+        \resizebox{\linewidth}{0.6\linewidth}{\input{figures/appendices/flux_diffusive}}
+        \caption{}
+    \end{subfigure}
+    \caption{Fluid (grey lines) in a pipe (black line) after some time starting from intial state described by Fig.\ref{C2 - FIG - Fluid and fluxes}. (a) The fluid is moving forward (left to right) and brings along the dye thus leading to a convective flux $\mathbf{F}_C$ in the control volume $\Omega$. (b) The fluid is at rest and the dye diffuses everywhere which leads to a diffusive flux inside the control volume $\Omega$.}
+    \label{C2 - FIG - Convective and Diffusive Flux}
+     \vspace{-1.2em}
+\end{figure}
+
+
+From a mathematical point of view, the \textbf{diffusive flux} $\mathbf{F}_D$ is expressed as:
+
+\vspace{-1mm}
+\begin{equation}
+	\mathbf{F}_D = - \kappa \nabla \mathbb{U}
+	\label{C2 - EQ - Diffusive flux equation}
+\end{equation}
+\vspace{-1em}
+
+where $\kappa$ is the diffusivity constant and $\mathbb{U}$ a given flow quantity. In conclusion,  the key points regarding conservation laws can be summarized as follows:
+
+\vspace{3mm}
+\begin{box_definition}{Global and local conservation law}
+In a fixed control volume $\Omega$, the \textbf{global conservation law} is given by:
+
+\begin{equation}
+\frac{\partial}{\partial t} \int_{\Omega} \mathbb{U} \mathrm{~d} \Omega = - \int_S \mathbf{F} \cdot \mathrm{d} \mathbf{S} + \int_{\Omega} Q_V \mathrm{~d} \Omega + \int_S \mathbf{Q}_S \cdot \mathrm{d} \mathbf{S}
+\label{C2 - EQ - General equation for the general conservation law}
+\end{equation}
+\vspace{-0.1em}
+
+Using Gauss theorem (Eq.\ref{C2 - EQ - Gauss theorem}), the \textbf{local form of the conservation law} is:
+
+\begin{equation}
+\frac{\partial \mathbb{U}}{\partial t}+\nabla \cdot(\mathbb{U} \mathbf{v})=\nabla \cdot(\kappa \nabla \mathbb{U})+Q_V+\nabla \cdot \mathbf{Q}_S
+\label{C2 - EQ - General equation for the local conservation law}
+\end{equation}
+\vspace{-0.1em}
+
+with the flux $\mathbf{F}$ decomposed as the sum of $\mathbf{F}_C$ (Eq.\ref{C2 - EQ - Convective flux equation}) and $\mathbf{F}_D$ (Eq.\ref{C2 - EQ - Diffusive flux equation}).
+\end{box_definition}
+\vspace{1mm}
+
+Finally, it is important to emphasize that:
+
+\begin{itemize}
+	\item In a moving fluid, both convection and diffusion processes occur simultaneously, whereas if it is at rest, only diffusion takes place;
+	
+	\item Convection is a non-linear first-order process that enhances momentum in the direction of flow, whereas diffusion is a second-order linear process that disperses momentum in all directions.
+	
+		\item When a fluid is in motion, it can exhibit two distinct patterns: \textbf{laminar} flow, characterized by smooth and orderly layers, and \textbf{turbulent} flow, featuring chaotic and irregular motion with eddies and swirls. High-speed flows are predominantly influenced by convection, which ultimately leads to a turbulent behavior of the fluid.
+	
+\end{itemize}
+
+\newpage
+
+\subsectionTFE{Navier-Stokes equations}
+
+The Navier-Stokes equations constitue a set of partial differential equations used to describe the motion of a fluid, they can be derived from the local conservation law (Eq.\ref{C2 - EQ - General equation for the local conservation law}).
+
+
+\subsubsectionTFE{Mass conservation}
+
+The law of mass conservation is a general statement that is independant of the nature of the fluid as well as the forces acting on it. As a matter of fact, it expresses that in any fluid system mass cannot disappear from the system, nor be created. Therefore, the flow quantity of interest is simply $\mathbb{U} = \rho$, i.e. the density of the fluid. In addition to that, it is important to notice that mass can only be transported by convection and that no diffusive flux exists thus $\mathbf{F}_C = \rho \mathbf{v}$ and $\mathbf{F}_D = 0$. Finally, in the absence of external sources ($Q_V$ and $\mathbf{Q}_S$ equal to 0), one obtains the \textbf{mass conservation law}:
+
+\begin{equation*}
+	\frac{\partial \rho}{\partial t}+\nabla \cdot(\rho \mathbf{v})=0
+\end{equation*}
+\vspace{-0.2em}
+
+which in fluid mechanics litterature is often also named the \textbf{continuity equation}. It is important to note that, for the sake of simplicity in notations, the spatial ($\mathbf{x}$) and temporal ($t$) dependencies of all flow quantities have been omitted. In the case where the fluid is \textbf{incompressible} meaning that $\rho(\mathbf{x}, t) = \rho$, the density becomes a constant and the mass conservation law can be simplified into:
+
+\vspace{-0.1em}
+\begin{equation}
+	\nabla \cdot \mathbf{v}=0
+	\label{C2 - EQ - Mass conservation law for incompressible fluid}
+\end{equation}
+\vspace{-0.8em}
+
+This assumption is frequently used in fluid mechanics and is applicable to water at normal speeds, as well as air and liquid gases at low speeds. However, in situations involving high-speed flows, such as those encountered in aeronautics over plane wings, this assumption may no longer hold true.
+
+\subsubsectionTFE{Momentum conservation}
+
+In physics, momentum is a fundamental concept representing an object resistance to changes in its motion. It is determined by the object mass and velocity, meaning heavier and faster objects possess more momentum, making them more difficult to stop or to alter their path. From a mathematical point of view, momentum is a vector expressed as the product of the mass of an object and its velocity.\\
+
+For this reason, the quantity of interest is $\boldsymbol{\mathbb{U}} = \rho \mathbf{v}$, i.e. the fluid momentum per unit mass in the 3 space directions. Furthermore, momentum can only be created through convection thus $\mathbf{F}_C = \rho \mathbf{v} \otimes \mathbf{v}$ and $\mathbf{F}_D = 0$. One must notice that momentum has 3 components, thus in this situation $\mathbf{F}_C$ is a \textbf{second order tensor} but the notations do not change for simplicity. Moreover, according to Newton's law, t\textit{he variation of momentum is directly proportional to the total force applied to an object.} Actually, this total force can be decomposed as the sum of external and internal forces applied to the fluid. In other words, the source term $\mathbf{Q}_V$ represents the \textbf{external volumes forces per unit volume }$\rho \mathbf{f}_E$ whereas $\mathbf{Q}_S$ corresponds to the \textbf{sum of internal forces} denoted $\mathbf{f}_i$.
+
+\newpage
+
+In fluid mechanics, external volumic forces encompass a diverse range of effects, including magnetic forces, Coriolis forces, and others. However, among these forces, gravity stands out as the most familiar. Therefore, as an example, if gravity is the predominant external volumic force, one would obtain the following one-dimensional tensor:
+
+\begin{equation}
+	\mathbf{Q}_V = \rho \mathbf{f}_E = \rho \mathbf{g}
+	\label{C2 - EQ - External volumic forces}
+\end{equation}
+\vspace{-0.3em}
+
+To understand internal forces, one can consider a fluid at rest and zoom in on an infinitesimal volume of fluid denoted $\mathrm{d}\Omega$ as shown in Fig.\ref{C2 - FIG - Cauchy stress illustration}. In order to remain in equilibrium the internal stresses experienced by the volume of fluid must be balanced by the external stresses exerted by its surroundings, in accordance with the principle of Newton's action-reaction law.\\
+
+\begin{wrapfigure}[15]{r}{.5\linewidth}
+	\vspace{-7mm}
+    \centering
+    \resizebox{\linewidth}{0.75\linewidth}{\input{figures/appendices/cauchy}}
+    \caption{Balance of forces for an infinitesimal volume of fluid $\mathrm{d}\Omega$ at equilibrium with its surrounding in a resting fluid.}
+    \label{C2 - FIG - Cauchy stress illustration}
+\end{wrapfigure}
+
+Thus, there exists an equilibrium of forces in all three-space directions, with each force being the result of contributions from the three directions. As an example, the total force per unit area (= stress) felt by the x-face denoted $\mathbf{f}_x$, can be decomposed as the sum of a stress applied normally to the surface named \textbf{pressure} as well as two other tangential stresses to the surface called \textbf{shear stresses}.  From a mathematical point of view, this can be writen as:
+
+\begin{spreadlines}{1em}
+\begin{align*}
+\mathbf{f}_x & = \sigma_{x, \ x} \ \mathbf{e}_x + \sigma_{y, \ x} \ \mathbf{e}_y + \sigma_{z, \ x} \ \mathbf{e}_z  \\
+& = \sigma_{i, \ x} \ \mathbf{e}_i \ \ \text{(\textit{Einstein notation})}
+\end{align*}
+\end{spreadlines}
+\vspace{0.3em}
+
+where $\sigma_{x, x}$ corresponds to the pressure applied on the x-face, $\sigma_{y, x}$ the shear stress on the x-face in the y-direction, $\sigma_{z, x}$  the shear stress on the x-face in the z-direction and finally $\mathbf{e}_i$ is a unit vector forming the cartesian axis basis with $i = x, \ y, \ z$. Furthermore, the total forces per unit area experienced by the y- and z-faces of the fluid can be derived using a similar reasoning. There are nine stresses in total, typically represented using the internal (or Cauchy) stress second-order tensor where component-wise:
+
+\begin{equation}
+\boldsymbol{\sigma} =
+\begin{dcases}
+\sigma_{\ i, \ i} = p_{\ i, \ i} = \text{Pressure applied on the i-th surface.}\\
+\sigma_{\ i, \ j} = \tau_{\ i, \ j} =\text{Shear stress on the j-th surface in the i-th direction.}\\
+\end{dcases}
+\label{C2 - EQ - Cauchy stress tensor}
+\end{equation}
+\vspace{0.3em}
+
+In conclusion, by combining all the stresses into this second-order tensor, a comprehensive representation of the internal forces is obtained for $\mathbf{Q}_S$  as:
+
+\vspace{0.2em}
+\begin{equation}
+\mathbf{Q}_S = \boldsymbol{\sigma} = \mathbf{f}_x \ \mathbf{e}_x + \mathbf{f}_y \ \mathbf{e}_y + \mathbf{f}_y \ \mathbf{e}_z
+\label{C2 - EQ - Internal forces}
+\end{equation}
+
+\newpage
+
+An assumption that is often made in fluid mechanics is that the fluids is Newtonian, i.e. the relationship between the viscosity of the fluid and the shear rate ($\mathrm{d}\tau/\mathrm{d}t$) is linear !  For example, water, air, alcohol are fluids falling into this category. From a mathematical point of view, one can now express the shear stress as:
+
+\begin{equation}
+\boldsymbol{\tau}=\mu\left(\left(\nabla \mathbf{v}+\nabla \mathbf{v}^T\right)-\frac{2}{3}(\nabla \cdot \mathbf{v}) \mathbf{I}\right)
+\label{C2 - EQ - Shear stress for newtonian fluids}
+\end{equation}
+\vspace{-0.1em}
+
+with $\mu$ the dynamic viscosity and $\mathbf{I}$ the identity tensor. Furthermore, under this assumption, the Cauchy stress tensors can be further developped:
+
+\vspace{0.2em}
+\begin{equation}
+\boldsymbol{\sigma}  = -p \mathbf{I} + \boldsymbol{\tau} =  -p \mathbf{I} + \mu\left(\left(\nabla \mathbf{v}+\nabla \mathbf{v}^T\right)-\frac{2}{3}(\nabla \cdot \mathbf{v}) \mathbf{I}\right)
+\label{C2 - EQ - Cauchy stress tensor for newtonian fluids}
+\end{equation}
+\vspace{-0.1em}
+
+Finally, by injecting these former results into the local form of the equation, one will obtain the \textbf{momentum conservation law} for Newtonian fluids:
+
+\vspace{0.2em}
+\begin{equation*}
+\rho \frac{\partial \mathbf{v}}{\partial t}+\rho(\mathbf{v} \cdot \nabla) \mathbf{v}=-\nabla p+\mu\left(\Delta \mathbf{v}+\frac{1}{3} \nabla(\nabla \cdot \mathbf{v})\right)+\rho \mathbf{f}_e
+\end{equation*}
+
+\subsubsectionTFE{Energy conservation}
+
+In thermodynamic, the energy content of a system can be expressed in terms of its internal energy per unit mass $e$. Indeed, this internal energy is a state variable hence, its variation during a thermodynamic transformation depends only on the final and initial states. For a fluid, the conserved quantity is the total energy $E$, which is the sum of its internal energy and kinetic energy per unit mass:
+
+\begin{equation}
+E = e + \frac{||\mathbf{v}||}{2}^2
+\label{C2 - EQ - Total energy per unit mass}
+\end{equation}
+\vspace{-0.2em}
+
+In addition to that, it is known that the first law of thermodynamics reveals that the variation in total energy is driven by the work done by the forces acting on the fluid and the heat transferred to it. \\
+
+Therefore, the quantity of interest is $\mathbb{U} = \rho E$, the convective and diffusive fluxes of energy are respectively given by $\mathbf{F}_{C}=\rho E\mathbf{v}$ and $\mathbf{F}_{D}= - \kappa \gamma \rho \nabla e$ since there is no diffusive flux linked to motion with $\gamma = c_p/c_v$, representing the ratio of specific heat coefficients under constant pressure and constant volume. Additionally, the external volume source $Q_V$ corresponds to the sum of the work done by the volume forces $\mathbf{f}_e$ and the heat sources $q_H$, such as radiation, heat released by chemical reactions, etc. Finally, the internal source $\mathbf{Q}_S$ corresponds to the work done by the internal shear stresses acting at the surface of the fluid mathematically expressed as $\boldsymbol{\sigma} \cdot \mathbf{v}$. As a result, the \textbf{energy conservation law} is:
+\vspace{1em}
+\begin{equation*}
+\frac{\partial \rho E}{\partial t} + \nabla \cdot (\rho \mathbf{v} E) = \nabla \cdot (k \nabla T) + \nabla \cdot [(-p \mathbf{I} + \tau) \cdot \mathbf{v}] + \rho \mathbf{f}_{\mathrm{e}} \cdot \mathbf{v} + q_H
+\end{equation*}
+
+\newpage
+
+In conclusion, the Navier-Stokes equations can be summarized as follows:\\
+
+\begin{box_definition}{Navier-Stokes equations}
+For a Newtonian fluid (Eq.\ref{C2 - EQ - Shear stress for newtonian fluids}), the \textbf{mass conservation law} reads as:
+\begin{equation}
+	\frac{\partial \rho}{\partial t}+\nabla \cdot(\rho \mathbf{v})=0
+	\label{C2 - EQ - Mass conservation law}
+\end{equation}
+
+In addition to that, the \textbf{momentum conservation law} is expressed as:
+\begin{equation}
+\rho \frac{\partial \mathbf{v}}{\partial t}+\rho(\mathbf{v} \cdot \nabla) \mathbf{v}=-\nabla p+\mu\left(\Delta \mathbf{v}+\frac{1}{3} \nabla(\nabla \cdot \mathbf{v})\right)+\rho \mathbf{f}_e
+\label{C2 - EQ - Momentum conservation law}
+\end{equation}
+
+Finally, the \textbf{energy conservation law} is given by:
+\begin{equation}
+\frac{\partial \rho E}{\partial t}+\nabla \cdot(\rho \mathbf{v} E)=\nabla \cdot(\kappa \gamma \rho \nabla e)+\nabla \cdot(\boldsymbol{\sigma} \cdot \mathbf{v})+\rho \mathbf{f}_{\mathrm{e}} \cdot \mathbf{v}+q_H
+\label{C2 - EQ - Energy conservation law}
+\end{equation}
+\end{box_definition}
+
+\subsectionTFE{Quasigeostrophy}
+The Navier-Stokes equations are non-linear partial differential equations that aim, once solved, to completely describe the motion of a fluid. However, solving these equations directly without any simplification is extremely computationally expensive. Therefore, it is essential to understand the physics involved and needed for simulating the oceans to simplify the equations using certain assumptions. Consequently, one must first understand the main causes of wind at the ocean and atmospheric scale.
+\vspace{0.3em}
+
+\begin{multicols}{2}
+\subsubsectionTFE{Pressure gradient}
+The air applies pressure over Earth's surface due to its weight. The air densitiy varies inversely with the temperature; its density decreases when the temperature increases because molecules have more energy and are able to move further away from each other. In addition to that, due to the slight inclination of its axis of rotation, Earth is not uniformly heated by the Sun, which creates a temperature gradient all over its surface. Therefore, high and low-pressure regions are created, leading to the creation of wind, i.e. air is pushed from high to low-pressure regions. An illustration of these pressure zones as well as the idealized wind movement (without taking Coriolis force into account) are represented in Fig.\ref{C2 - FIG - Illustration of pressure gradient and Coriolis force}(a).
+%% ------ %%
+\columnbreak
+%% ------ %%
+\subsubsectionTFE{Coriolis force} 
+The Coriolis force is an apparent force resulting from Earth's rotation, leading to the deflection of moving objects within a rotating reference frame. In the Northern Hemisphere, objects veer to the right, while in the Southern Hemisphere, they veer to the left. The strength of this force is influenced by an object's speed, direction of motion, and latitude. Moving closer to the poles brings one nearer to the axis of rotation, resulting in an increased rotational speed. Consequently, the Coriolis force becomes more pronounced in these regions due to the higher rotational speed. An illustration of the global wind circulation on Earth which takes into account pressure gradients as well as Coriolis force is shown in Fig.\ref{C2 - FIG - Illustration of pressure gradient and Coriolis force}(b).\vfill
+\end{multicols}
+
+\newpage
+
+\begin{figure}[!t]
+    \begin{subfigure}[c]{0.5\textwidth}
+    	\includegraphics[width=1\linewidth]{figures/appendices/earth_pressure_gradient.png}
+        \caption{}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}[c]{0.5\textwidth}
+    	 \vspace{0.3mm}
+        \includegraphics[width=1\linewidth]{figures/appendices/earth_coriolis.png}
+        \caption{}
+    \end{subfigure}
+    \caption{Illustration of Earth's wind circulation. (a) In this situation, only pressure gradients created by the high and low-pressure regions are taken into consideration, leading to straight wind directions. (b) In this second situation, Earth's rotation is also considered through the Coriolis force, which curves wind trajectories.}
+    \label{C2 - FIG - Illustration of pressure gradient and Coriolis force}
+    \vspace{-0.5em}
+\end{figure}
+
+In situations where the dominant physical causes influencing the flow are the pressure gradient and the Coriolis force, and they precisely balance out, a \textbf{Geostrophic flow} emerges. A jet stream is a good example of a geostrophic flow, it is characterized by high velocity and narrow air currents. Typically, these flow patterns are commonly observed from the upper part of the mid-latitude ($\sim 45^{\circ}$) to the pole, where the Coriolis force is at its strongest. However, in regions where the Coriolis force weakens, such as in the subtropic regions (around $\sim 30^{\circ}$ latitude), convection becomes more influential. As a result, the initial jet-like structure slowly evolves into a more chaotic flow. In other words, the straight and narrow path taken by the flow widens, and eddies begin to form. The flow described here is known as a \textbf{Quasi-geostrophic} flow.\\
+
+The quasigeostrophy theory proves to be useful in atmospheric and oceanic fluid dynamics since it simplifies the Navier-Stokes by neglecting certain terms. This simplification makes the models computationally efficient while effectively capturing the essential features of geophysical phenomena, including jet streams, ocean currents, mesoscale eddies, and weather systems.\\
+
+As it happens, mesoscale eddies (around 10 to 100 kilometers) play essential roles in various geophysical phenomena. In the atmosphere, they contribute to the development and evolution of weather systems, such as cyclones and anticyclones. Similarly, in the ocean, they transport heat, nutrients, and momentum, influencing the distribution of temperature, salinity, and currents. Additionally, the interactions of eddies with larger-scale flows lead to the transfer of energy and the redistribution of properties within the fluid. Consequently, the importance of the Quasigeostrophy becomes evident, as it allows for modeling these eddies, and understanding their dynamics is crucial for improving weather forecasts, climate models, primary production cycles and our overall comprehension of Earth's atmospheric and oceanic systems.
+
+\newpage
+
+% CITE - PYQG PAPER
+% CITE - PSEUDO SPECTRAL METHODS
+% CITE - 
+
+\subsubsectionTFE{Python Quasigeostrophic Model (\textit{PyQG})}
+The numerical simulations are done with \textit{PyQG}, it is a python library that models quasigeostrophic systems using pseudo-spectral methods. The derivation of the complete set of quasigeostrophic equations is left to the reader, \cite{BookQG} is a great book to help doing it. Therefore, one will only be introduced to the prognostic variable, i.e. the physical quantity that allows to determine the state of the system.\\
+
+\begin{wrapfigure}[35]{r}{.57\linewidth}
+	\vspace{-2cm}
+    \centering
+    \includegraphics[width=1.1\linewidth, trim={1cm 3cm 1cm 1cm}, clip]{figures/appendices/two_layers_model.png}
+    \caption{Illustration of the two-layer quasigeostrophic flow model solved using PyQG to generate data. This is a side view showing the different layers but the model is 2-dimensional, i.e. the results obtained are in the XY-plane.}
+    \label{C2 - FIG - Two-layers quasigeostrophic flow model}
+    \includegraphics[width=1.05\linewidth, trim={1cm 3cm 1cm 0cm}, clip]{figures/appendices/potential_vorticity.png}
+    \caption{Evolution of the relative vorticity $\zeta$ of a moving fluid parcel observed at constant lattitude ($f = \text{C}^{\text{st}}$) for 3 regions of different heights $\Delta z$.}
+    \label{C2 - FIG - Example for the potential vorticity}
+\end{wrapfigure}
+
+First of all, the model used is a \textbf{two-layer quasigeostrophic flow} which simplifies the governing equations of fluid dynamics (Eq.\ref{C2 - EQ - Mass conservation law}, \ref{C2 - EQ - Momentum conservation law} and \ref{C2 - EQ - Energy conservation law}) while preserving important geophysical flow features. Indeed, it reduces computational complexity and approximates vertical structure by dividing the fluid into two layers with varying densities. This allows to capture essential dynamics like baroclinic instability and vertical motion. A  representation of the model is shown in Fig.\ref{C2 - FIG - Two-layers quasigeostrophic flow model}.\\
+
+The model prognostic variable is the \textbf{potential vorticity} $q$, it is a conserved quantity in an inviscid, adiabatic, frictionless fluid and is crucial to understand large-scale atmospheric and oceanic flows. As an example, illustrated in Fig.\ref{C2 - FIG - Example for the potential vorticity}, one imagine observing a moving air column at a fixed latitude (Coriolis force is constant). It's mathematical expression is given by:
+
+\vspace{-0.1em}
+\begin{equation}
+	q = \dfrac{\zeta + f}{\Delta z} = \text{C}^{\text{st}}
+	\label{C2 - EQ - Potential vorticity equation}
+\end{equation}
+\vspace{-0.3em}
+
+with $\zeta$ the relative vorticity, $f$ the planetary vorticity and $\Delta z$ the height of the air column. Initially $\zeta_1 = 0$, therefore by conservation, one must have $\zeta_2 < 0$ in the second region which implies that the air column turns clockwise (if in the Nothern hemisphere) and it is unstable. Finally, in the third region, one obtains $\zeta_3 > 0$ leading to a counter-clockwise movement and a more stable flow. Hence, one understands easily the usefullness of $q$ to determine the dynamics of a flow, since it is a conserved quantity, it takes into account the vertical motion and it is a scalar thus, it does not depend on the coordinates system used.
+
+\newpage
+
+The \textbf{potential vorticity of a two-layer quasigeostrophic flow} is:
+
+\vspace{-0.3em}
+\begin{equation}
+q_m=\nabla^2 \psi_m+(-1)^m \frac{f_0^2}{g^{\prime} H_m} \Delta \psi \hspace{4mm} \text{with} \hspace{2mm} m \in \{1, 2\} 
+\label{C2 - EQ - Potential vorticity in the two-layer quasigeostrophic flow}
+\end{equation}
+
+
+where $\psi_m$ denotes the streamfunction at depth $H_m$ and the difference between the two layers is given by $\Delta \psi = \psi_1 - \psi_2$. The operator $\nabla$ represents the horizontal gradient, and $g'$ stands for the reduced gravity. Additionally, the planetary vorticity $f$ is calculated using a beta plane approximation, which assumes linearity with respect to latitude. Thus, $f = f_0 + \beta y$, where $f_0$ represents the Coriolis parameter and $\beta$ corresponds to the slope. In addition to that, the velocity vector for the $m$-layer is expressed as $\mathbf{v}_m = <u_m, \ v_m>$, where $u_m$ and $v_m$ correspond to the longitudinal and latitudinal velocities respectively. The \textbf{prognostic equation} in layer $m$, solved using a pseudo-spectral, is given by:
+
+\begin{equation}
+	\dfrac{\partial q_m}{\partial t} + (\mathbf{v}_m \cdot \nabla) q_m = - \beta_m \dfrac{\partial \psi_m}{\partial x} - U_m \dfrac{\partial q_m}{\partial x}  - \delta_{m, 2} \ r_{ek} \nabla^2 \psi_2 + \text{ssd}
+\label{C2 - EQ - Prognostic equation for the potential vorticity in the two-layer quasigeostrophic flow}
+\end{equation}
+\vspace{-0.2em}
+
+where $\beta_m = \beta + (-1)^{m+1} f_0^2/(g^{\prime} H_m)$ represents the mean potential vorticity gradient, $\Delta U = U_1 - U_2$ is a constant mean zonal velocity shear between the two-fluid layers and \textit{ssd} stands for small scale dissipation. Additionally, the Dirac delta function $\delta_{m, 2}$ indicates that the bottom drag with coefficient $r_{ek}$ is only applied to the second layer due to interaction with the ocean floor. Finally, in the spectral space denoted by the symbol $\widehat{( )}$, the streamfunctions can be obtained from the PV as follows:
+
+\vspace{-0.2em}
+\begin{equation}
+\left(\mathbf{M}-\kappa^2 \mathbf{I}\right) \cdot\left[\begin{array}{l}
+\hat{\psi}_1 \\
+\hat{\psi}_2
+\end{array}\right]=\left[\begin{array}{l}
+\hat{q}_1 \\
+\hat{q}_2
+\end{array}\right], \ \text { where } \mathbf{M}=\left[\begin{array}{cc}
+-\frac{f_0^2}{g^{\prime} H_1} & \frac{f_0^2}{g^{\prime} H_1} \\
+\frac{f_0^2}{g^{\prime} H_2} & -\frac{f_0^2}{g^{\prime} H_2}
+\end{array}\right]
+\label{C2 - EQ - Bridge between streamfunction and vorticities in spectral space}
+\end{equation}
+\vspace{+0.1em}
+
+Here, $\kappa = \sqrt{k^2 + l^2}$ represents the radial wavenumber, where $k$ and $l$ are the zonal and meridional wavenumbers, respectively. Finally, the complete dynamic of the fluid can be determined, as the velocity fields can be obtained from the streamfunctions using the relationships $u_m = -\partial_y \phi_m$ and $v_m = \partial_x \phi_m$.
+
+\vspace{-0.1em}
+\subsectionTFE{Subgrid physics and parameterizations} 
+To solve the Eq.\ref{C2 - EQ - Prognostic equation for the potential vorticity in the two-layer quasigeostrophic flow}, it is necessary to discretize both the equation and the spatial domain. If solved anatically, the solution describes the behaviour of the potential vorticity at any spatial scale. However, due to the discretization of the domain, only the physical phenomena occuring at a size greater than the numerical resolution are captured while smaller scale physics is unsolved. For that reason, a cell value can be seen as the average value of all the contributions coming from physical phenomena occuring at a smaller scale inside of it.\\
+
+\vspace{-0.5em}
+Hence, with increasing simulation resolution, the level of detail in the physics improves, and errors due to neglected physical processes decrease. However, higher resolution simulations come with a significant computational cost, especially in the case of earth climate simulations. To address this challenge, one solution is to conduct low-resolution simulations and use a \textbf{parametrization} to account for the missing contributions. To this day, the development of these parametrizations is an active and crucial area of research at the intersection of turbulent fluid mechanics and machine learning.
+
+\newpage
+
+In order to understand what needs to be parameterized, one must first assume that the exact value of a given flow quantity $\mathbb{U}$ can be decomposed as:
+
+\vspace{-0.4em}
+\begin{equation*}
+\underbrace{\Tilde{\mathbb{U}}}_{\text{Total}} = \underbrace{\Bar{\mathbb{U}}}_{\text{Mean}} + \underbrace{\mathbb{U}'}_{\text{Fluctuation}}
+\label{C2 - EQ - Mean and fluctuation decomposition}
+\end{equation*}
+
+Numerically speaking, the cell value corresponds to the average solution $\Bar{\mathbb{U}}$ and the missing contribution of the negelected physical processes is represented by $\mathbb{U}'$. Therefore, what is truly solved numerically is the average prognostic equation. As an example, one can imagine solving the momentum conservation law given by Eq.\ref{C2 - EQ - Momentum conservation law} but for simplicity the linear terms are grouped into $\mathbf{F}$ (forcing terms) and $\mathbf{D}$ (dissipation terms). Hence, averaging the equation is done as follows:
+
+\vspace{-0.2em}
+\begin{equation*}
+\overline{\frac{\partial \mathbf{v}}{\partial t}}+\overline{(\mathbf{v} \cdot \nabla) \mathbf{v}}=\overline{\mathbf{F}}+\overline{\mathbf{D}} \hspace{1em} \Longleftrightarrow \hspace{1em} \frac{\partial \overline{\mathbf{v}}}{\partial t}+\overline{(\mathbf{v} \cdot \nabla) \mathbf{v}}=\overline{\mathbf{F}}+\overline{\mathbf{D}}
+\end{equation*}
+\vspace{-0.5em}
+
+As it can be seen, the non-linear advection term needs more work to be developped properly. For this reason, assuming that the mean value of the fluctuation is equal to zero and using \textit{Einstein notation}, one obtains:
+
+\begin{spreadlines}{1em}
+\begin{equation*}
+\begin{aligned}
+\overline{(\mathbf{v} \cdot \nabla) \mathbf{v}} = \overline{\tilde{v}_j \frac{\partial \tilde{v}_i}{\partial x_j}} &=\overline{\left(\bar{v}_j+v_j^{\prime}\right) \frac{\partial}{\partial x_j}\left(\bar{v}_i+v_i^{\prime}\right)} \\&=\overline{\bar{v}_j \frac{\partial \bar{v}_i}{\partial x_j}}+\overline{\bar{v}_j \frac{\partial v_i^{\prime}}{\partial x_j}}+\overline{v_j^{\prime} \frac{\partial \bar{v}_i}{\partial x_j}}+\overline{v_j^{\prime} \frac{\partial v_i^{\prime}}{\partial x_j}} \hspace{1em} \text{where} \hspace{1em}  \overline{\bar{v}_j \frac{\partial v_i^{\prime}}{\partial x_j}} = \overline{v_j^{\prime} \frac{\partial \bar{v}_i}{\partial x_j}}  = 0\\
+        &=\bar{v}_j \frac{\partial \bar{v}_i}{\partial x_j}+\frac{\partial}{\partial x_j} \overline{v_i^{\prime} v_j^{\prime}}\\
+        &=  (\overline{\mathbf{v}} \cdot \nabla) \overline{\mathbf{v}} +\frac{\partial}{\partial x_j} \overline{v_i^{\prime} v_j^{\prime}}
+\end{aligned} 
+\end{equation*}
+\end{spreadlines}
+
+In conclusion, the average momentum equation solved numerically is expressed as:
+
+\begin{equation}
+\frac{\partial \overline{\mathbf{v}}}{\partial t} + (\overline{\mathbf{v}} \cdot \nabla) \overline{\mathbf{v}} = \overline{\mathbf{F}} + \overline{\mathbf{D}} + \mathbf{S}
+\label{C2 - EQ - Reynolds stresses}
+\end{equation}
+\vspace{-0.5em}
+
+where $\mathbf{S}$ incorporates contributions arising from physics occurring at a smaller scale than the resolution. In fluid mechanics literature, this term is referred to as the \textbf{subfiltered momentum}. It mathematically corresponds to the divergence of the mean fluctuations product, but from a physical standpoint, it lacks a clear interpretation. Consequently, deriving an intuitive analytical expression for this term has been a longstanding challenge within the scientific community.\\
+
+It is also important to note that the mean fluctuations product, i.e. $\overline{v_i^{\prime} v_j^{\prime}}$, is known as the \textbf{Reynolds stresses} in the literature. Additionally, Eq.\ref{C2 - EQ - Subgrid forcing of non-linear advection} is not the only representation of the subgrid term. In fact, there are two other possibilities. The first one is obtained by formulating the problem such that the numerical model requires a parameterization of the Reynolds stresses. Another option involves defining subgrid terms based on the difference between the prognostic equations solved at high and low resolution.
+
+\newpage
+
+In this example, the expression for the subfilter momentum has been found. With a similar and more complex reasoning, one can extract the same expressions for the potential vorticity, which will be used throughout this work.
+
+\vspace{0.2em}
+\begin{box_definition}{Subgrid tendency formulations for potential vorticity}
+First, denoting $\partial_t^H$ and $\partial_t^L$ as the tendency equations (see Eq.\ref{C2 - EQ - Prognostic equation for the potential vorticity in the two-layer quasigeostrophic flow}) from the high- and low-resolution models respectively, the \textbf{total subgrid forcing} is given by:
+
+\begin{equation}
+S_{q_{\textit{tot}}}= \overline{\partial_t^H q} - \partial_t^L \overline{q}
+\label{C2 - EQ - Total subgrid forcing}
+\end{equation}
+\vspace{-0.5em}
+
+Alternatively, one can consider the \textbf{subgrid forcing of potential vorticity} resulting from unresolved non-linear advection:
+
+\begin{equation}
+S_{q}= \overline{(\mathbf{v} \cdot \nabla) q}  - (\overline{\mathbf{v}} \cdot \nabla) \overline{q}
+\label{C2 - EQ - Subgrid forcing of non-linear advection}
+\end{equation}
+\vspace{-0.5em}
+
+Lastly, the subgrid flux, i.e., Reynolds stresses, can be considered. By finding a parameterization of it and applying a numerical divergence operation, it ensures that the added quantity results from the divergence of some quantity, thus respecting the conservation law from a mathematical standpoint. The mathematical expression of the \textbf{subgrid flux} is:
+
+\vspace{-1em}
+\begin{equation}
+\mathbf{\Phi}_q= \overline{\mathbf{u}q} - \overline{\mathbf{u}} \ \overline{q}
+\label{C2 - EQ - Subgrid fluxes}
+\end{equation}
+\vspace{-0.5em}
+
+Under the assumption of an incompressible flow (see Eq.\ref{C2 - EQ - Mass conservation law for incompressible fluid}) and that differentiation commutes with filtering and coarsening, one finds that $\overline{\nabla} \cdot \phi_q \approx S_q$ \citep{Benchmarking}. In practice, these three formulations are highly correlated and nearly identical.
+
+\end{box_definition}
+
+As a conclusion to this chapter, Fig.\ref{C2 - FIG - Subfilter quantities illustration} is a final illustration of the impact of the model resolution on the dynamic of the solution obtained.
+
+\begin{figure}[!h]
+    \centering
+    \input{figures/appendices/subgrid}    
+    \caption{Impact of numerical resolution on the dynamic of the solution. In the high-resolution simulation, small-scale eddies have dimensions higher than the numerical resolution, while in the low-resolution simulation, small eddies remain unresolved.}
+    \label{C2 - FIG - Subfilter quantities illustration}
+\end{figure}
+
+% ------- END --------- %
+

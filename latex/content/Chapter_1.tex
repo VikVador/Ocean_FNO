@@ -1,0 +1,208 @@
+% ------------------------------------------------------------------
+%                                                 Chapter 1
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{One}{A call for climate simulation}{1}{\textit{"What is the use of a house if you haven't got a tolerable planet to put it on ?"} \begin{flushright} - \textit{Henry David Thoreau}\end{flushright}}
+
+% -------------------------------
+%                    Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Introduction}
+
+In today's world, the global climate crisis has transcended its status as a mere environmental issue to emerge as a shared concern for humanity's future. The fate of our species is at stake, urging us to face the dire consequences of our actions. Over the past two decades, the Earth has witnessed some of its most devastating climate disasters, including hurricanes (Katrina 2005, Harvey 2017), cyclones (Nargis 2008, Idai 2019), floods (Pakistan 2010, Belgium 2021), heatwaves (Russia 2010, Arctic 2020), bushfires (Australia 2019--2020), and many more. Moreover, as seen in Fig. \ref{C1 - FIG - Subfilter quantities global reported natural disasters by type, 1970 to 2022}, the alarming trend of identified climate disasters has increased fourfold since 1970.\\
+
+Even worse, oxygen concentrations in both the open ocean and coastal waters have been declining since at least the middle of the 20th century \citep{, OxygenOcean2, OxygenBS2, OxygenBS1, OxygenOcean1}. This loss of oxygen, known as deoxygenation, is a significant phenomenon occurring in oceans increasingly damaged by human activities. These activities have led to elevated temperatures, extremely high CO2 levels and nutrient inputs, which, in turn, have affected the population and distribution of marine species.\\
+
+With just a handful of examples, one can grasp the significance and necessity of climate modeling as it will enable the simulation, understanding, and prediction of the Earth's climate system. It will help to reconstruct past climates, to project future climate scenarios based on various factors like emissions and policies, and to assess the impact of climate change on numerous sectors.\\
+
+Nevertheless, it is unrealistic to expect an earth-scale numerical simulation that flawlessly captures all the intricacies of global wind circulation and ocean currents. Undoubtedly, the computational cost would be untractable, and by the time the simulation concludes, significant environmental damage could have occurred. Therefore, an effective approach is to conduct simulations at a large spatial scale but with reduced resolution. This balances computational time while sacrificing some details. The challenge lies in efficiently incorporating neglected physical processes, a topic of considerable interest within the scientific community and the focus of this master's thesis.
+
+\newpage
+
+\begin{figure}[!t]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/chapter_1/natural_disasters.png}
+    \caption{Global reported natural disasters by type from 1970 to 2022. The annual reported number of natural disasters are categorised by type and this includes both weather and non-weather
+related disasters.}
+    \label{C1 - FIG - Subfilter quantities global reported natural disasters by type, 1970 to 2022}
+\end{figure}
+
+\subsectionTFE{State of the art}
+
+In the context of oceans, whether one is studying global wind circulation or ocean currents, simulations frequently involve turbulent flows. They exhibit chaotic, irregular, and random motion of fluid particles, arising from complex interactions between different scales of motion in the fluid. In contrast to laminar flow, where fluid particles move smoothly in parallel layers, ocean flows are distinguished by the presence of vortices, eddies, and fluctuations in velocity and pressure.\\
+
+\vspace{0.5em}
+
+Hence, simulations necessitate a considerable scale and high resolution to adequately capture small-scale turbulent structures. However, the associated computational time becomes prohibitive, necessitating a reduction in resolution. Nonetheless, in lower-resolution simulations, smaller turbulent eddies and fluctuations remain unresolved due to grid limitations, resulting in an incomplete portrayal of turbulent processes and subsequently impacting the simulation accuracy.\\
+
+\vspace{0.5em}
+
+Nowadays, simulations are commonly conducted at the mesoscale resolution, typically ranging from 10 to 100 kilometers. However, these overlooked physical processes occur at the submesoscale level (less than 10 kilometers). A first question that arises is whether these disregarded processes can be safely overlooked or if their contribution holds significant importance.\\
+
+\newpage
+
+In 1941, Andrey Kolmogorov introduced the concept of the Kolmogorov cascade, which elucidates the energy transfer across various scales in turbulent flows until reaching scales where energy dissipates due to viscous effects \citep{KolmogorovKaskade}. Consequently, it is evident that disregarding small-scale physical processes in simulations should impact the energy budget.\\
+
+\vspace{-0.42em}
+
+This observation has been consistently emphasized in numerous research studies. For instance, \cite{InfluenceMesoscale1} demonstrated the significant sensitivity of ocean dynamical solutions to grid resolution. In fact, increasing the simulation resolution to O(1) km resulted in an enhanced energy spectrum for all eddy scales, leading to a complete alteration of flow dynamics, as depicted in Fig.\ref{C1 - FIG - Impact of resolution on dynamics}.\\
+
+\vspace{-0.42em}
+
+Nevertheless, in certain regions of the globe, mesoscale dynamics have been proven to be the primary driver of biological production by modulating nutrient supplies throughout the year \citep{InfluenceMesoscale2, InfluenceMesoscale3}. However, to accurately predict mesoscale behavior, a correct energy spectrum is necessary, which can only be achieved by resolving submesoscale processes.\\
+
+\vspace{-0.42em}
+
+In conclusion, the answer to this first question leans towards "no, since these small-scale processes cannot be overlooked" but this topic still remains a subject of intense investigation within the scientific community \citep{InfluenceMesoscale6, InfluenceMesoscale9, InfluenceMesoscale5, InfluenceMesoscale7, InfluenceMesoscale4, InfluenceMesoscale8}.\\
+
+\vspace{-0.42em}
+
+Subsequently, the following question arises: How can one account for the missing contributions of these submesoscale processes while achieving faster simulations than high-resolution approaches and accurately representing flow dynamics ? In other words, how can one derive a parameterization for this absent physics ? 
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/chapter_1/impact_resolution.png}
+    \caption{Snapshots of surface relative vorticity and sea-surface temperature (SST) simulated with increasing grid resolution, from $1 ^\circ$ ($= 111$ km) to $1/54^\circ$ ($\approx 2$ km) generated by the model of \cite{InfluenceMesoscale1}}
+    \label{C1 - FIG - Impact of resolution on dynamics}
+\end{figure}
+
+\newpage
+
+Over the years, many scientists have attempted to address this question. The developement of turbulence closure modelling, i.e. finding a parameterization for the missing contributions, using analytical formulations can be traced back to the mid-20th century.\\
+
+In 1925, Prandtl published a paper that profoundly influenced the understanding and modeling of turbulence in fluid dynamics \citep{ClosureAnalytical1}. Through meticulous analysis of experimental data, Prandtl provided essential insights into the nature of turbulence, making it easier to comprehend and predict turbulent flows in practical engineering applications.\\
+
+Building upon Prandtl's work, many researchers have made significant advancements in fluid mechanics and a perfect example there is Smagorinsky's turbulence model \citep{ClosureAnalytical2}. This model represents an important milestone in turbulence modeling since it is the first to incorporate subgrid-scale modeling in numerical simulations. Its application in various atmospheric and oceanic models, such as weather prediction and climate models, has enabled reasonably efficient simulations of turbulent flows.\\
+
+Following this, the development of two major turbulence models, the $k-\varepsilon$ \citep{ClosureAnalytical3} and $k-\omega$ \citep{ClosureAnalytical4} models, has been instrumental in simulating turbulent flows and continues to be widely utilized in current research and engineering practices.\\
+
+Another significant contribution to turbulence modeling is the Backscattering model \citep{ClosureAnalytical51, ClosureAnalytical52}. Indeed, this model addresses the backscatter mechanism, where energy is transferred from unresolved subgrid scales back to the resolved scales due to interactions between resolved-scale and subgrid-scale motions. Implementing backscatter energy in a physically consistent manner enhances the accuracy of turbulence models, particularly in regions with complex turbulence behavior.\\
+
+However, all of these analytical parameterizations encounter a common challenge known as the closure problem. Introducing additional equations often involves higher-order statistical moments, leading to an excess of unknowns compared to equations. Furthermore, universality becomes an issue as turbulence behaves differently in various flow regimes, limiting the applicability of the model. Moreover, the validity range of these models is restricted, and they may struggle to accurately predict turbulence behavior outside this range. Additionally, turbulence closure models are sensitive to initial and boundary conditions, and they may lack accuracy in complex flows.\\
+
+Finally, in the context of climate modeling, the most significant issue arises from the introduction of artificial viscosity in many of these models. In order to maintain numerical stability, the viscosity is often increased, even in flows where convection should dominate. Consequently, the flow becomes numerically dominated by diffusion, leading to an undesired smoothing effect (see Eq. \ref{C2 - EQ - General equation for the local conservation law}). This is problematic because flows in climate modeling, such as global wind circulation and ocean currents, are predominantly turbulent and composed of eddies, resulting in a chaotic nature. However, diffusion aims to smooth out the flow, reducing the turbulent eddy-generating behavior. This discrepancy highlights the necessity to explore alternative forms of parameterizations.
+
+\newpage
+
+Naturally, with the rapid expansion of machine learning and its remarkable accomplishments, researchers have increasingly explored its potential for turbulence parameterization. As a consequence, since 2010, numerous papers have emerged at the intersection of machine learning and fluid dynamics, seeking to leverage these tools.\\
+
+In 1877, Boussinesq presented his effective turbulent viscosity hypothesis in his work \textit{Théorie analytique de la chaleur}. He proposed that turbulent flows involve momentum exchange between larger, resolved scales, and smaller, unresolved turbulent eddies, which can be represented using an effective viscosity. This relationship links the Reynolds stress to velocity gradients in fluid flow equations (see Eq.\ref{C2 - EQ - Momentum conservation law}).\\
+
+Nearly a century later, Pope extended this concept by introducing a more generalized form of the effective-viscosity relationship \citep{EffectiveViscosity}. Instead of assuming a linear relationship, he proposed a power-law relationship. This generalized form allows to capture a broader range of turbulence behaviors and is expected to capture more accurately the dynamics of turbulent flows across various flow regimes.\\
+
+In 2016, his work resurfaced, emphasizing the invariance property he imposed on the turbulence parameterization he developed. Indeed, in the publication of \cite{DNNInvariant1} , they introduced a data-driven, physics-informed parameterization of turbulence, integrating the invariance properties into the neural network architecture. In the context of fluid dynamics, this ensures that the governing equations (see Eq.\ref{C2 - EQ - Mass conservation law}, \ref{C2 - EQ - Momentum conservation law} and \ref{C2 - EQ - Energy conservation law}) remain unchanged under specific coordinate transformations and by incorporating them into the DNN design, the model achieves enhanced physical consistency and better captures the physics involved in the turbulent flows. Furthermore, this architecture has served as an inspiration for many others, for an excellent and comprehensive review of them, one should refer to \cite{DNNInvariant3}.\\
+
+Another great work is the one by \cite{FCNN1}, in their study they use convolutional neural networks to predict unresolved turbulent processes and subsurface flow fields. They demonstrate that these neural networks successfully replicate spatiotemporal variability of subgrid eddy momentum forcing (see Eq.\ref{C2 - EQ - Reynolds stresses}) and can generalize to various dynamical behaviors while respecting global momentum conservation. This study provides valuable insights for designing ocean eddy parameterizations in coarse-resolution climate models.\\
+
+As an example of their work (see Fig.\ref{C1 - FIG - CNN predictions of subgrid-term x-components}), they investigate the spatiotemporal variability of the true subgrid-forcing term $S_x$ x-components and its predicted value $\tilde{S}_x$ in a $512 \times 512$ domain. All the neural networks, denoted by $f_x\left(\bar{\psi}, \mathbf{w}_i\right)$ with $i = 1, 2 ,3$, trained on different regions successfully reproduce the spatial patterns of the true $S_x$ but exhibit varying magnitudes. The network trained on data from the western boundary accurately reproduces the correct amplitude and variability. However, the network trained on data from the eastern boundary underestimates the magnitude by approximately 50\%, whereas the network trained on data from the southern gyre underestimates $S_x$ by an order of magnitude. To assess their accuracy even more, the Pearson correlation is calculated between $S_x$ and $\tilde{S}_x$. As it can be seen, the networks show high correlation within the jet region but tend toward zero or negative correlation near the eastern boundary.
+
+\newpage
+
+\begin{figure}[!h]
+    \centering
+    \includegraphics[width=0.94\linewidth]{figures/chapter_1/CNN_zanna.png}
+    \caption{Examining the nonlocal prediction ability. Comparisons of the true zonal component of the subfilter momentum forcing $S_x$, with the neural networks trained using data from three different regions. The first three rows compare (a-d) snapshots, (e-h) time means, and (i-1) the standard deviation, respectively, while the bottom row (m-o) shows the correlation between the true $S_x$ and the predictions $\tilde{S}_x$. The first column contains the diagnostics using the true zonal subfilter momentum forcing $S_x$, while columns two, three, and four use predictions $\tilde{S}_x$ from the neural networks $f_x\left(\bar{\psi}, \mathbf{w}_1\right), f_x\left(\bar{\psi}, \mathbf{w}_2\right)$, and $f_x\left(\bar{\psi}, \mathbf{w}_3\right)$, respectively. All diagnostics were produced using the validation data, the figure and legend come from the work \cite{FCNN1}.}
+    \label{C1 - FIG - CNN predictions of subgrid-term x-components}
+\end{figure}
+
+\newpage
+
+Recently, the field of deep learning has witnessed the emergence of an exciting and innovative branch that explores the integration of neural networks within the realm of Fourier space. In fact, this novel architecture, known as the Fourier Neural Operator \citep{FNO}, represents a significant step forward at the intersection of neural networks and Fourier analysis.\\
+
+\vspace{-0.3em}
+
+The Fourier Neural Operator (FNO) is innovative because it seamlessly blends the expressive power of neural networks with the unique representation capabilities of Fourier analysis. Neural networks have demonstrated remarkable success in handling complex patterns and capturing intricate relationships within data, while Fourier analysis provides a mathematical framework to decompose signals into frequency components, highlighting long-range interactions and global patterns.\\
+
+\vspace{-0.3em}
+
+Since then, many new papers building upon it have emerged, including the Factorized Fourier Neural Operator (FFNO), which enhances the architecture by using separable spectral layers, improved residual connections, better training strategies like the Markov assumption, etc \citep{FFNO}. These advancements allow FFNO to scale to deeper networks and outperform the original Fourier Neural Operator on challenging problems, such as the Navier-Stokes equation. An illustration of its capabilities is shown in Fig.\ref{C1 - FIG - FFNO}.\\
+
+\vspace{-0.3em}
+
+To finish, the Spherical Fourier Neural Operators, recently published,  represents a groundbreaking extension of Fourier Neural Operators by leveraging the generalized Fourier transform to efficiently learn operators on spherical geometries \citep{SFNO}. Indeed, it provides stable and accurate long-range forecasts for atmospheric dynamics, crucial for climate prediction. An illustration of it is shown in Fig.\ref{C1 - FIG - SFNO}. With impressive computational efficiency, SFNOs achieve forecasts for an entire year within 13 minutes on a single GPU. This promising advancement holds significant potential for sub-seasonal-to-seasonal forecasting and machine learning-based climate prediction.
+
+\begin{figure}[!b]
+    \centering
+    \includegraphics[width=0.95\linewidth]{figures/chapter_1/SFNO.png}
+    \caption{Solutions to the Shallow Water Equations on the rotating Sphere predicted by SFNO and FNO architectures in comparison to the ground truth solution computed using a classical spectral solver.  The plots depict the geopotential height at 5 and 10 hours, the figure and legend comes from the work \cite{SFNO}.}
+    \label{C1 - FIG - SFNO}
+\end{figure}
+
+\newpage
+
+In conclusion, the emergence of these Fourier Neural Operators marks an exciting new frontier in the deep learning field, bringing together the power of neural networks and the insights from Fourier analysis to tackle complex partial differential equation problems with unparalleled efficiency and accuracy. These architectures, the FNO and the FFNO specifficaly, will be explored more deeply in what comes afterwards since they are the object of this thesis.
+
+\begin{figure}[!b]
+    \centering
+    \includegraphics[width=1\linewidth]{figures/chapter_1/FFNO.png}
+    \caption{Visualization of the correlation variation between the ground truths and different models. The heatmaps represent the surface of a torus mapped onto a 2D grid, with color representing the vorticity (the spinning motion) of the fluid. One observes that the vorticity fields predicted by the F-FNO trained on 128x128 grids (middle row) correlates with the ground truths (top row) for longer than if the DNS is run using the same spatial resolution (bottom row). This is especially evident after 6 seconds of simulation time (compare the green boxes). In other words, for the same desired accuracy, the F-FNO requires a smaller grid input than a numerical solver, the figure and legend come from the work \cite{FFNO}.}
+    \label{C1 - FIG - FFNO}
+\end{figure}
+
+\newpage
+
+The black-box nature of neural networks, while powerful for approximating complex functions, poses a challenge when it comes to gaining insights into the underlying physical processes. In addition to that, for many complex systems, one only has access to poor models because certain interaction terms are unknown.\\
+
+A solution to these problems is to use a new method such as the Symbolic Regression (SR) fits, it is a machine learning technique that discovers compact, human-readable mathematical expressions reflecting underlying data relationships, especially useful for complex or unknown variable relationships. SR assumes a sparse and algebraic input-output relationship for the data-generating mechanism. By combining symbolic regression with deep learning, researchers can build hybrid models that retain the flexibility of neural networks while also capturing the interpretability of symbolic equations.\\
+
+This idea was developped further by \cite{PySR}, they present a novel approach to distill symbolic representations of a deep learning model, focusing on Graph Neural Networks (GNNs). Their technique encourages sparse latent representations during supervised training of GNNs, followed by symbolic regression to extract explicit physical relations from components of the learned model. Moreover, the symbolic expressions extracted using their method generalize better to out-of-distribution data compared to the GNN itself. Applied to a cosmology example, they discover a new analytic formula predicting dark matter concentration from nearby cosmic structures' mass distribution. Hence, applying this method in the context of turbulence closure modeling holds significant promise, as demonstrated by \cite{ClosureGNN}, who have successfully utilized Graph Neural Networks for this purpose.\\
+
+An alternative solution to the initial problem involves using a Relevance Vector Machine (RVM), which differs from symbolic regression methods. The RVM primary objective is to identify the most significant features or variables in the input data that contribute to the prediction task. By estimating the relevance of each feature and automatically selecting the most relevant ones, the RVM creates a sparse model. \cite{ClosureDataDrivenZanna} explored this approach and successfully found several parameterizations for the turbulence closure term. Although the results were inferior to those produced by their Convolutional Neural Network (CNN) in \cite{FCNN1}, the RVM provided an interpretable parameterization.\\
+
+To conclude, regardless of the approach used, whether it involves neural networks, symbolic regression, or other methods, it is essential to assess the quality of the results obtained. A consistent way to achieve this is through the framework presented by \cite{Benchmarking}. Indeed, this framework enables the evaluation of the offline ability of the parameterization learned, i.e. it uses various metrics to assess the quality of the local predictions made for the closure term. Additionally, the framework facilitates the assessment of the online ability of the network. It provides various tools to observe the quality of simulations conducted at low resolution and corrected at each time step by the network. Key aspects such as the energy spectrum, decorrelation time, probability distribution similarities, and other relevant indicators are also considered. This comprehensive approach ensures a rigorous evaluation of the performance and effectiveness of the parameterizations found.
+
+\newpage
+
+\subsectionTFE{Research objectives and aims}
+
+The objective of this thesis is to investigate the intersection of deep learning and physics in the domain of ocean dynamics. Specifically, we aim to explore and assess the performance of state-of-the-art deep learning methods in enhancing the quality of low-resolution ocean simulations. The ultimate goal is to discover a new parameterization for the neglected physical processes, i.e. Reynolds stresses (see Eq.\ref{C2 - EQ - Reynolds stresses}), that could significantly improve the quality of the results, comparable to computationally intensive high-resolution simulations.\\
+
+To achieve this, the key objectives of this study are as follows:
+
+\vspace{0.4em}
+
+\begin{enumerate}
+\item Use my background in physics to comprehend the fluid mechanics involved in the case of ocean modelling. This involves explaining and ensuring that everyone possesses sufficient knowledge of the underlying physics to interpret the subsequent results effectively.
+
+\vspace{0.3em}
+
+\item Reproduce the results obtained in previous studies, namely \cite{FCNN1, ClosureDataDrivenZanna, Benchmarking}, using both their Fully-Convolutional-Neural-Network (FCNN) and their learned parameterization through Relevance Vector Machine (RVM).
+
+\vspace{0.3em}
+
+\item Extend the investigation conducted in \cite{Benchmarking} by employing more complex and larger datasets, with the hope of enhancing the obtained results.
+
+\vspace{0.3em}
+
+\item Use the Fourier Neural Operators, specifically the FNO \citep{FNO} and FFNO \citep{FFNO}, which is a novel approach in the context subgrid scale processes parameterization, aiming to improve upon the original results and the new results obtained with the expanded datasets.
+
+\vspace{0.3em}
+
+\item Conduct a rigorous assessment of the newly learned parameterizations, using the benchmark framework established in \cite{Benchmarking}. This will ensure a comprehensive evaluation of the models performance, accuracy and physical meaning of the resulting simulations.
+\end{enumerate}
+
+\begin{figure}[!b]
+    \centering
+    \includegraphics[width=\linewidth]{figures/chapter_1/quote.png}
+    \label{C1 - FIG - Feynman}
+\end{figure}
+
+
+
+
+
+
+
+
+
+
+
+
+

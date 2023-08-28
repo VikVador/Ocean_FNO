@@ -1,0 +1,144 @@
+% ------------------------------------------------------------------
+%                                                 Chapter 4
+% ------------------------------------------------------------------
+%
+% New page for good measure !
+\newpage
+
+% -------------------------------
+%    Chapter Title & Description
+% -------------------------------
+\sectionTFE{Four}{Datasets}{4}{The aim of this chapter is to clarify the type of flow under investigation, outline the general dataset generation procedure, describe the processes of coarsening and filtering, define the simulation parameters and their values, and detail the datasets generated for this study.}
+
+
+
+% -------------------------------
+%                    Content
+% -------------------------------
+\setlength{\parindent}{0pt}
+\subsectionTFE{Introduction}
+
+In the world of machine learning, as for any scientific fields involving numerical simulations, the adage "garbage in, garbage out" stands strong. Indeed, a model, even if its the latest state of the art available right now, can only be as proficient as the quality of data it learns from. Therefore, the importance of data quality cannot be overstated, as it creates the fundation upon which models are built.\\
+
+This work uses the quasigeostrophic flow Python numerical solver, known as \textit{PyQg}, to generate datasets.  Especially, this approach becomes imperative due to the limitations encountered when attempting to use real data, such as satellite imagery of the oceans. As a matter of fact, the complexities of space and time sampling introduce formidable challenges that makes the use of such data impractical and insufficient for effective model training. Indeed, space and time sampling challenges are the result of the nature of the ocean which can be simply described as huge, dynamic and full of physical phenomenons occuring at different space and time scales. Satellite imagery, while a powerful tool, introduces biases arising from limited spatial coverage and temporal resolution. Therefore, the PyQG numerical solver seems to be the most simple and efficient solution.\\
+
+In the mid-latitude region, the primary focus area, two distinct flow types govern the range of possible flows found there. The first one is a jet-driven flow, where geostrophic equilibrium predominates, resulting in structured, linear flow. Conversely, the second scenario involves eddy-driven flows, where the strength of inertial forces disrupts the geostrophic equilibrium, emphasizing flow speed. In this context, the previously straightforward flow path transforms into a more turbulent dynamic, giving rise to the generation and dispersion of eddies across the region.\\
+
+In their studies \citep{FCNN1, Benchmarking, ClosureDataDrivenZanna}, the adopted approach centers on concentrating on a single flow type, deriving a parameterization, and then assessing its applicability to other flows. They are several reasons that could justify this choice. Indeed, the decision to focus training on a single flow type is grounded in practical considerations driven by real-world limitations and the complexity of data acquisition. 
+
+\newpage
+
+In practical situations, the acquisition of comprehensive real data remains challenging. Focusing on a specific flow type aligns with this scarcity of data, adding practicality to the study. Successfully deriving a parameterization for this selected flow type holds substantial potential, showcasing the ability to create effective representations using a constrained dataset. Additionally, the generation of data involves inherent costs. Within our framework, the use of an idealized model simplifies Navier-Stokes equations and considers solely two fluid layers. This simplification enables more manageable solutions and supports academic exploration and concept development. Therefore, transferring this approach to a more realistic context introduces the challenge of limited data due to the complexities of data collection. As a result, the need to train with a modest dataset arises from these practical constraints.\\
+
+Nevertheless, owing to the simplicity of our model and their work leaving the exploration of the impact of more complex datasets for future research, our attention will be aimed at investigating the effects of dataset size and complexity while also conducting tests involving the new Fourier Neural Operator architectures for the parameterization of subgrid scale processes. Our study will contain datasets that range from single-simulation datasets to those that consist of multiple simulations of a single flow type, and will extend even further to datasets incorporating samples from both types.
+
+\subsectionTFE{Generating a dataset}
+
+The dataset generation, which includes flow field quantities like velocity fields and potential vorticity, along with the corresponding missing subgrid process contributions as defined in Eq.\ref{C2 - EQ - Total subgrid forcing}, \ref{C2 - EQ - Subgrid forcing of non-linear advection} and \ref{C2 - EQ - Subgrid fluxes}, is achieved as follows:
+
+\begin{enumerate}
+	\item \textbf{High-resolution simulation}: A simulation is run for a duration of 10 years with a one-hour time step, using a specified set of initial and boundary conditions denoted as $B$. There are 2 main reasons explaining the need of doing such a long-time simulation:
+	
+	\begin{itemize}
+		\item From a physics point of view, the solution to the quasigeostrophic problem eventually settles into a quasi-steady state. This means that once this equilibrium state is reached, the physical variables that describe the flow will fluctuate around a certain value. To tackle such challenges, like many computational fluid dynamics solvers, \textit{PyQG} uses an iterative approach. It begins with initial conditions, then refines the solution at each step until the system reaches a quasi-steady state.\\
+
+Between the early stages of the simulation and the moment where the quasi-steady state is achieved, the solution is referred to as the "transient solution". This phase captures the transformation of the solution from its initial state to the final one that accurately depicts the intended flow. This transient solution can persist for a considerable number of time steps, highlighting the need to allow the simulation to run for an adequate duration to reach the quasi-steady state. Otherwise, if the simulation is sampled prematurely, the obtained results might lack genuine physical meaning.
+		
+		\item In atmospheric flows, even the faster scales like those of small eddies evolve over relatively long time spans, typically a few days. Consequently, to efficiently sample the simulation, a significant amount of time needs to pass between two consecutive samplings. To gather just a few thousand samples, it is necessary to run the simulation for around 10 years. This extended runtime ensures the generation of a diverse range of samples that accurately describe the flow dynamics.
+	\end{itemize}
+	
+	\vspace{0.5em}	
+	
+	\item\textbf{Low resolution simulation}: Under the same initial and boundary conditions $B$, a simulation is conducted for 10 years, using a one-hour time step.
+	
+	\vspace{0.5em}
+	
+	\item\textbf{Sampling}: Starting after 4 years (for an eddy-driven flow) and 6 years (for a jet-driven flow) of simulation, potential vorticity is sampled every 1000 hours until the simulation concludes. Indeed, as explained in chapter two, this variable serves as the prognostic factor from which all other physical flow quantities can be derived.
+	
+	\vspace{0.5em}
+	
+	\item\textbf{Extracting subgrid processes contributions}: First of all, one needs to assume that the period of time chosen for simulation is long enough to sample efficiently but short enough for both high- and low-resolution simulations to remain correlated. 	As a reminder, the main issue that one wants to correct is the energy defficiency of the low-resolution simulation. It is the energy that defines the dynamic of a simulation, therefore if the simulation is run for too long, the energy defficiency will at some point affect the dynamic of the simulation and make it diverge from one another regarding the physics of the flow they aim to describe.\\
+	
+Assuming this assumption holds, the next steps involve coarsening and filtering the high-resolution simulation. For each sample, it is necessary to reduce the resolution and smooth out the solution obtained from PyQG for the potential vorticity. The resulting solution serves as a condensed representation of the high-resolution simulation. While not as visually precise, it accurately maintains the energy budget—a contrast to the deficient energy dissipation in the low-resolution counterpart due to neglected small-scale processes.\\
+
+Finally, the difference, for a given flow quantity, between the coarsened and filtered low-resolution simulation and the original low-resolution simulation reveals the neglected contribution of to subgrid-scale processes.
+ 
+\end{enumerate} 
+\vspace{0.25em}
+
+\subsubsectionTFE{Coarsening and filtering}
+
+\textbf{Coarse-graining }involves reducing the resolution of a simulation or dataset while retaining essential details. This technique includes averaging values over larger regions to effectively downscale the resolution and capture the behavior of larger-scale processes. The procedure is straightforward: begin with a high-resolution simulation and divide the grid into larger blocks matching the lower resolution grid size. Fininally, within each block, average (or aggregate) the values.
+
+\newpage
+
+\textbf{Filtering} modifies the frequency content of a signal or dataset by eliminating unwanted noise, high-frequency variations, or fine-scale details while maintaining significant features.\\
+
+\vspace{-0.1em}
+
+Though coarsening alone offers a way to achieve lower resolution data, it might not tackle noise or unwanted high-frequency variations effectively. On the contrary, filtering could result in a smoother data representation but might miss out on large-scale features captured by coarser resolution. Combining both filtering and coarsening in certain cases can yield more informative outcomes, producing a cleaner, smoother depiction of large-scale behavior while retaining essential features.\\
+
+\vspace{-0.1em}
+
+Various methods can be used to perform coarsening and filtering operations on datasets. However, it is crucial to be cautious, as the approach to extracting subgrid processes contributions can impact both the training quality and predictive ability of the neural network. This aspect, namely evaluating parameterization quality based solely on coarsening and filtering choices, has already been explored by \citep{Benchmarking}, and we will adopt their recommended approach for our study. To achieve coarsening, we will use a method called \textbf{spectral truncation}. This involves removing modes from the high-resolution simulation to match the available modes in the low-resolution simulation. Once truncated, the grid values are then averaged over larger regions corresponding to the low-resolution grid. In the case of filtering, a sharp filter is applied afterwards. This filter preserves low frequencies while reducing higher frequencies above a specified threshold. Both of these operations are already integrated into PyQG, and further details on their functioning can be found in the PyQG documentation on its github.io page.
+
+\vspace{-0.1em}
+\subsectionTFE{Simulations}
+
+In order to run a simulation, several parameters must be chosen:\\
+
+\vspace{-1.5em}
+\subsubsectionTFE{SOLVER}
+\vspace{-0.2em}
+
+The high-resolution simulation employs a grid size of $256 \times 256$ pixels, while the low-resolution simulation uses a grid of $64 \times 64$ pixels. Both simulations run for a duration of $T = 10$ [years], with a time step of one hour. Sampling begins after the system has achieved a quasi-steady state solution, which takes 4 years for eddy-driven flows and 6 years for jet-driven flows.\\
+
+\vspace{-1.5em}
+\subsubsectionTFE{MODEL}
+\vspace{-0.2em}
+
+Each model consists of a doubly-periodic square domain with dimensions $L = 10^6$ [m], flat topography, and a combined depth of $H = H_1 + H_2 = 2500$ [m]. A constant zonal velocity shear, $\Delta U = U_1 - U_2 = 0.025$ [m/s] is imposed between the upper and lower layers ($U_1 = 0.025$ [m/s], $U_2 = 0$). The deformation radius $r_d$, a key measure for baroclinic instability and mesoscale turbulence, is set at $15000$ [m], with the requirement that $r_d / \Delta x > 2$ for effective mesoscale eddy resolution. For instance, a $256 \times 256$ grid with $\Delta x_{\text {hires}} = L / 256 = 3906.25$ [m] leads to $r_d / \Delta x_{\text {hires}} = 3.84$, effectively resolving mesoscale turbulence. Conversely, a $\Delta x_{\text {lores}} = L / 64 = 15625$ [m] grid results in $r_d / \Delta x_{\text {lores}} = 0.96$, rendering the simulation unrealistic. Lastly, the heights of the fluid layers are determined, with $H_1 / H_2 = 0.25$ for an eddy-driven flow and $H_1 / H_2 = 0.1$ for a jet-driven flow.
+
+
+All the previously mentioned parameters will remain constant throughout this study. Consequently, only two parameters can be adjusted to tweak the flow dynamics. The first parameter is the bottom drag coefficient $r_{e k}$, which determines the influence of frictional forces in the bottom layer. Additionally, there is the slope of the Coriolis parameter $\beta$, altering the intensity of the Coriolis force with altitude. Increasing its value amplifies inertial forces, leading to an eddy-driven flow. In the work of \cite{Benchmarking}, they chose to use $r_{e k} = 5.789 \times 10^{-7}$ [$s^{-1}$]  and $\beta = 1.5 \times 10^{-11}$ for the eddy-driven flow, while for the jet-driven flow, $r_{e k} = 7 \times 10^{-8}$  [$s^{-1}$] and $\beta = 1 \times 10^{-11}$ were used. The resulting flows are depicted in the Fig.\ref{C4 - FIG - Vizualization of an eddy and jet flow} and correspond to the expected behavior of eddy-driven and jet-driven flow types.
+
+\subsectionTFE{Generated datasets}
+
+Throughout this study, various dataset configurations were explored to enhance the performance of the well-established FCNN model and to assess, for the first time, the capabilities of the Fourier Neural Operators in the context of subgrid processes parameterization. Just like the reference papers we built upon, we generated datasets comprising samples from a single flow type. Additionally, we explored the approach of using a dataset that contains samples from multiple simulations of the same flow type. The idea is that both flow types exhibit distinct dynamics, leading to orders of magnitude differences in characteristic flow variables such as potential vorticity. Thus, by training the neural network on samples that maintain the same flow dynamic while varying its intensity, like changing flow speed, makes it learn the dynamics of the flow while experiencing a broader input value spectrum that shares some values closer to the one of the other flow. 
+
+
+\begin{figure}[!b]
+	\vspace{-2em}
+    \centering
+    \includegraphics[width=1.01\linewidth]{figures/Chapter_4/eddies_and_jets_driven.png}
+    \caption{Snapshots of upper (A,E) and lower (B,F) potential vorticity (PV), barotropic kinetic energy (C,G), and barotropic enstrophy (D,H) for simulations run in eddy (A-D) and jet (E-H) configurations over a square, doubly-periodic domain of length $10^6$ m. Eddy configuration results in an approximately isotropic distribution of vortices, while jet configuration results in the formation of stable, long-lived jets with more coherent latitudinal structure. This figure and caption comes from \cite{Benchmarking}.}
+    \label{C4 - FIG - Vizualization of an eddy and jet flow}
+\end{figure}
+
+\newpage
+
+To achieve this, simulations were conducted using bottom drag coefficient and coriolis parameter slope values drawn from uniformly distributed distributions within +-5\% of the values used by \cite{Benchmarking}. This value was found empirically and could potentially be increased, but around 20\% (- for eddies and + for jets), the dynamic differences of both flow began to diminish. Lastly, the ultimate datasets consist of multiple simulations of both flow types. Here, our interest lies in determining whether the neural network can effectively derive a parameterization that applies to both types of flows using the combined data. We want to explore whether the network, even without full training on one flow type, can still enhance its performance for that type by incorporating features learned from the other.\\
+
+Our study will be organized into 6 phases. At times, the focus will be on observing the impact of changing the dataset type on the results. In other instances, the emphasis will be on maintaining the dataset type while exploring the effects of increasing the number of samples. The datasets used in each phase are summarized in Tab.\ref{C4 - TAB - DATASETS}.
+
+\input{tableaux/datasets}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
