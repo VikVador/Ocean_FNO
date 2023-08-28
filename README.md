@@ -22,10 +22,8 @@ Master Thesis (Summary)
 <hr>
 <a href="https://github.com/VikVador/Ocean-subgrid-parameterizations-in-an-idealized-model-using-machine-learning/blob/main/latex/TFE.pdf" target="_blank" rel="noopener noreferrer"><img width="100%" src="latex/TFE_visual.png" /></a>
 
-<p  style="text-align:center;">
-| <b>MSc thesis summary </b> | (TOP) Visualization of the Fourier Neural Operator architecture. (BOTTOM LEFT) Comparison of energy spectra between a high resolution simulation (blue), low resolution simulation (green) and a low resolution simulation using our new parameterization (orange) to account for the missing subgrid scale processes contributions (BOTTOM RIGHT). Table of predicting accuracies for various architectures, colored lines are generalization tests, results from [1] are shown in the second line and our results are shown in the last line.
-</p>
 
+| $${\color{lightblue}MSc thesis summary}$$  | (TOP) Visualization of the Fourier Neural Operator architecture. (BOTTOM LEFT) Comparison of energy spectra between a high resolution simulation (blue), low resolution simulation (green) and a low resolution simulation using our new parameterization (orange) to account for the missing subgrid scale processes contributions (BOTTOM RIGHT). Table of predicting accuracies for various architectures, colored lines are generalization tests, results from [1] are shown in the second line and our results are shown in the last line.
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
