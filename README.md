@@ -45,7 +45,7 @@ pip install --editable .
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
-Master thesis
+Master thesis manuscript
 </p>
 <hr>
 <img src="latex/TFE_Visual.pdf" />
@@ -55,4 +55,4 @@ Results
 </p>
 <hr>
 
-All the results are available [`here`](./results/results.pdf) but they can all be downloaded using the following link.
+All the results are available [`here`](./results/results.pdf), they can also all be downloaded from the following <a href="https://drive.google.com/drive/folders/1hOfx6Ly6GrzDq_C_dq5hNgBTqMK8GAM8?usp=share_link">repository</a>.
