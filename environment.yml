@@ -20,4 +20,5 @@ dependencies:
     - gcm_filters
     - gplearn
     - pyqg
-
+    - einops
+    - git+https://github.com/VikVador/FourierFlow
