@@ -17,6 +17,20 @@ In conclusion, this research not only facilitates a comprehensive grasp of the u
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
+Master thesis manuscript
+</p>
+<hr>
+<img src="latex/TFE_Visual.pdf" />
+<hr>
+<p  style="font-size:20px; font-weight:bold;" align="center">
+Results
+</p>
+<hr>
+
+All the results are available [`here`](./results/results.pdf), they can also all be downloaded from the following <a href="https://drive.google.com/drive/folders/1hOfx6Ly6GrzDq_C_dq5hNgBTqMK8GAM8?usp=share_link" target="_blank" rel="noopener noreferrer">repository</a>.
+
+<hr>
+<p  style="font-size:20px; font-weight:bold;" align="center">
 Installation
 </p>
 <hr>
@@ -42,17 +56,3 @@ pip install --editable .
 ```
 
 5. Run the code easily using the notebook [`TFE.ipynb`](./notebooks/TFE.ipynb).
-
-<hr>
-<p  style="font-size:20px; font-weight:bold;" align="center">
-Master thesis manuscript
-</p>
-<hr>
-<img src="latex/TFE_Visual.pdf" />
-<hr>
-<p  style="font-size:20px; font-weight:bold;" align="center">
-Results
-</p>
-<hr>
-
-All the results are available [`here`](./results/results.pdf), they can also all be downloaded from the following <a href="https://drive.google.com/drive/folders/1hOfx6Ly6GrzDq_C_dq5hNgBTqMK8GAM8?usp=share_link">repository</a>.
