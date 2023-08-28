@@ -5,15 +5,11 @@
 </p>
 <hr>
 
-In this repository, one will find my graduation work which is based on the work made from <a style="text-decoration:none" href="https://www.essoar.org/doi/10.1002/essoar.10511742.1">_Benchmarking of machine learning ocean parameterizations in an idealized model_</a>. Therefore, the goal of this project is to first **reproduce the result** and then **explore further** different configurations of convolutional neural networks.
+This research aims to explore novel methods for parameterizing the contributions of subgrid-scale processes, which refer to physical phenomena occurring at scales finer than the simulation resolution. More precisely, this work is built upon the research of Ross et al., 2023, who, after many years of parameterization development, have created a framework to properly conduct the assessment of the quality of a parameterization.
 
-<hr>
-<p  style="font-size:20px; font-weight:bold;" align="center">
-<a style="text-decoration:none" href="https://github.com/m2lines/pyqg_parameterization_benchmarks">Introduction</a>
-</p>
-<hr>
+In addition to replicating their findings, this study extends its scope by attempting to enhance their results through a series of experiments involving more complex datasets. Furthermore, and perhaps most significantly, it delves into the use of Fourier Neural Operators for modeling subgrid-scale process contributions. These neural networks were recently introduced by Li et al., 2020, and have already exhibited impressive results in many areas of computational fluid dynamics. Hence, while building upon the foundation laid by Ross et al., 2023, this study also pioneers the use of Fourier Neural Operators in this context, subjecting them to comprehensive evaluation within the established benchmarking framework.
 
-Ocean and climate models attempt to simulate continuous processes, but are discrete and run at finite resolution. The error incurred by discretization on a finite grid, however, can be approximated by _subgrid parameterizations_ and corrected at every timestep. Subgrid parameterizations are attempting to capture the effects of scales that are not resolved on the finite grid of the climate or ocean models we are using. Subgrid parameterizations can be formulated and derived in many ways, e.g. as equations derived by physical analysis, as a neural network learned from data, or as equations again but learned from data with symbolic regression.
+In conclusion, this research not only facilitates a comprehensive grasp of the underlying physics in ocean-climate simulations but also delves into unexplored realms by leverag- ing state-of-the-art deep learning techniques for modeling subgrid-scale processes contributions. The conclusive results show promise and underscore the notion that the most captivating discoveries frequently emerge at the crossroads of two captivating scientific domains.
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
