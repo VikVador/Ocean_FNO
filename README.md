@@ -11,9 +11,9 @@ In addition to replicating their findings, this study extends its scope by attem
 
 In conclusion, this research not only facilitates a comprehensive grasp of the underlying physics in ocean-climate simulations but also delves into unexplored realms by leveraging state-of-the-art deep learning techniques for modeling subgrid-scale processes contributions. The conclusive results show promise and underscore the notion that the most captivating discoveries frequently emerge at the crossroads of two captivating scientific domains.
 
-[1] Ross, Andrew et al. (2023). “Benchmarking of machine learning ocean subgrid parameterzations in an idealized model”. In: Journal of Advances in Modeling Earth Systems 15.1, e2022MS003258.
+[1] *Ross, Andrew et al. (2023). “Benchmarking of machine learning ocean subgrid parameterzations in an idealized model”. In: Journal of Advances in Modeling Earth Systems 15.1, e2022MS003258.*
 
-[2] Li, Zongyi et al. (2020). “Fourier neural operator for parametric partial differential equations”. In: arXiv preprint arXiv:2010.08895.
+[2] *Li, Zongyi et al. (2020). “Fourier neural operator for parametric partial differential equations”. In: arXiv preprint arXiv:2010.08895.*
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
