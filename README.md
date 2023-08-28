@@ -17,10 +17,10 @@ In conclusion, this research not only facilitates a comprehensive grasp of the u
 
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
-Master thesis manuscript
+Master Thesis Manuscript
 </p>
 <hr>
-<img width="100%" src="latex/TFE_visual.png" />
+<a href="https://drive.google.com/drive/folders/1hOfx6Ly6GrzDq_C_dq5hNgBTqMK8GAM8?usp=share_link" target="_blank" rel="noopener noreferrer"><img width="100%" src="latex/TFE_visual.png" /></a>.
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
 Results
