@@ -20,7 +20,7 @@ In conclusion, this research not only facilitates a comprehensive grasp of the u
 Master thesis manuscript
 </p>
 <hr>
-<img src="latex/TFE_Visual.pdf" />
+<img width="100%" src="latex/TFE_visual.png" />
 <hr>
 <p  style="font-size:20px; font-weight:bold;" align="center">
 Results
